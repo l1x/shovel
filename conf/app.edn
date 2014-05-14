@@ -1,0 +1,7 @@
+{ :consumer-config {  "zookeeper.connect"             "10.3.250.48:2181"
+                      "group.id"                      "shovel-test-0"
+                      "zookeeper.session.timeout.ms"  "1000"
+                      "zookeeper.sync.time.ms"        "200"
+                      "auto.commit.interval.ms"       "1000"
+                      "auto.offset.reset"             "smallest"
+                      "auto.commit.enable"            "true" }}
