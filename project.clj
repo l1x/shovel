@@ -4,10 +4,22 @@
   :license {:name " Apache License Version 2.0"
             :url "https://www.apache.org/licenses/LICENSE-2.0.txt"}
   :dependencies [
-    [org.clojure/clojure    "1.6.0"]
-    [org.clojure/tools.cli  "0.3.1"]
-    [com.google.guava/guava "16.0" ]
-    [org.clojure/data.json  "0.2.4"]]
+    ;kafka
+    [org.apache.kafka/kafka_2.10  "0.8.1"]
+    ;zookeeper
+    [zookeeper-clj                "0.9.3"]
+    ;rest
+    [org.clojure/clojure          "1.6.0"]
+    [org.clojure/tools.cli        "0.3.1"]
+    [com.google.guava/guava       "16.0" ]
+    [org.clojure/data.json        "0.2.4"]]
+  :exclusions [
+    javax.mail/mail
+    javax.jms/jms
+    com.sun.jdmk/jmxtools
+    com.sun.jmx/jmxri
+    jline/jline
+  ]
   :profiles {
     :uberjar {
       :aot :all

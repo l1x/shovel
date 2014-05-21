@@ -1,7 +1,8 @@
 (ns shovel.core
   (:require
     ;internal
-    [shovel.consumer            :as sh-con              ]
+    [shovel.consumer            :as sh-consumer         ]
+    [shovel.producer            :as sh-producer         ]
     ;external
     [clojure.tools.cli          :refer [parse-opts]     ]
     [clojure.edn                :as     edn             ])
@@ -46,7 +47,21 @@
         file-string)))
 
 ;; OPS
+(defn test-consumer 
+  [config] 
+  (sh-consumer/consume
+    (sh-consumer/message-streams 
+      (sh-consumer/consumer-connector config) 
+      (:topic config) 
+      (int (read-string (:thread.pool.size config))))))
 
+(defn test-producer
+  [config]
+  (let [producer-connection (sh-producer/producer-connector config)]
+    (doseq [n (range 100)]
+      (sh-producer/produce
+        producer-connection
+        (sh-producer/message "userprofile_test" "asd" (str "this is my message" n))))))
 
 ;; CLI
 
@@ -78,8 +93,10 @@
     (case (first arguments)
       "print-config"
         (println config)
-      "conn-test"
-        (println (cons-test config))
+      "consumer-test"
+        (println (take 10 (first (test-consumer (get-in config [:ok :consumer-config])))))
+      "producer-test"
+        (println (test-producer (get-in config [:ok :producer-config])))
       ;default
         (exit 1 (println "Dead end")))))
 

@@ -1,7 +1,20 @@
-{ :consumer-config {  "zookeeper.connect"             "10.3.250.48:2181"
-                      "group.id"                      "shovel-test-0"
-                      "zookeeper.session.timeout.ms"  "1000"
-                      "zookeeper.sync.time.ms"        "200"
-                      "auto.commit.interval.ms"       "1000"
-                      "auto.offset.reset"             "smallest"
-                      "auto.commit.enable"            "true" }}
+{ 
+  :consumer-config {  
+    :zookeeper.connect              "127.0.0.1:2181"
+    :group.id                       "shovel-test-0"
+    :thread.pool.size               "1"
+    :topic                          "userprofile_test"
+    :zookeeper.session.timeout.ms   "1000"
+    :zookeeper.sync.time.ms         "1000"
+    :auto.commit.interval.ms        "1000"
+    :auto.offset.reset              "smallest"
+    :auto.commit.enable             "false" 
+  }
+
+  :producer-config {  
+    :metadata.broker.list           "localhost:9092"
+    :serializer.class               "kafka.serializer.StringEncoder"
+    :request.required.acks          "1"
+  }
+
+};end

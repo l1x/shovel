@@ -1,3 +1,11 @@
+;; Copyright (c) Istvan Szukacs, 2014. All rights reserved.  The use
+;; and distribution terms for this software are covered by the Eclipse
+;; Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file epl-v10.html at the root of this
+;; distribution.  By using this software in any fashion, you are
+;; agreeing to be bound by the terms of this license.  You must not
+;; remove this notice, or any other, from this software.
+
 (ns 
   ^{:doc "
 
@@ -28,11 +36,53 @@
   (:require
     ;internal
     ;external
-    [clojure.pprint :as pprint]
-  )
+    [clojure.walk   :refer [stringify-keys]]
+    [clojure.pprint :as pprint])
   (:import
-    [kafka.consumer ConsumerIterator]
-    [kafka.consumer KafkaStream])
+    [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
+    [kafka.javaapi.consumer ConsumerConnector                   ]
+    [kafka.message          MessageAndMetadata                  ]
+    [java.util              Properties                          ])
   (:gen-class))
+
+; internal 
+
+(defn- hashmap-to-properties
+  [h]
+  (doto (Properties.) 
+    (.putAll (stringify-keys h))))
+
+(defn- lazy-iterate
+  [iterator]
+  (lazy-seq
+   (when (.hasNext iterator)
+     (cons (.next iterator) (lazy-iterate iterator)))))
+
+(defn- message-to-string
+  [message]
+  (String. (.message message)))
+  ;[(.topic message) (.offset message) (.partition message) (.key message) (.message message)])
+
+; external 
+
+(defn consumer-connector
+  [h]
+  (println "################ consumer-connector ###########")
+  (let [config (ConsumerConfig. (hashmap-to-properties h))]
+    (Consumer/createJavaConsumerConnector config)))
+
+(defn message-streams
+  [^ConsumerConnector consumer topic thread-pool-size]
+  (println "################ message-streams ###########")
+  (.get (.createMessageStreams consumer {topic thread-pool-size}) topic))
+
+(defn consume 
+  [streams]
+  (println "################ consume ###########")
+  [ (map #(lazy-iterate (.iterator ^KafkaStream %)) streams) ] )
+
+(defn get-messages [v]
+  [ (map message-to-string v) ] )
+
 
 
