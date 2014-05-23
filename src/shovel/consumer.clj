@@ -76,6 +76,42 @@
   (println "################ message-streams ###########")
   (.get (.createMessageStreams consumer {topic thread-pool-size}) topic))
 
+(defn test-iterate
+  [streams]
+  (println "################ test iterate ###########")
+  (doseq [stream streams]
+    (let [iter (.iterator ^KafkaStream stream)]
+    (doseq [n (range 300)] 
+      (println n)
+        (try
+          (cond 
+            (.hasNext iter)
+              (println (str "look ma, next item! :: " (String. (.message (.next iter)))))
+            :else
+              (println "No more item"))
+
+        (catch Exception e
+          (println "Tajmaut!")))))))
+        
+
+(defn shutdown
+  "Closes the connection to Zookeeper and stops consuming messages."
+  [^ConsumerConnector consumer]
+  (.shutdown consumer))
+
+
+
+;#######################
+
+
+
+
+
+
+
+
+
+
 (defn consume 
   [streams]
   (println "################ consume ###########")

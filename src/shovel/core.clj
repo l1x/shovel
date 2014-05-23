@@ -49,7 +49,8 @@
 ;; OPS
 (defn test-consumer 
   [config] 
-  (sh-consumer/consume
+  (sh-consumer/test-iterate
+;  (sh-consumer/consume
     (sh-consumer/message-streams 
       (sh-consumer/consumer-connector config) 
       (:topic config) 

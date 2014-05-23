@@ -6,9 +6,10 @@
     :topic                          "userprofile_test"
     :zookeeper.session.timeout.ms   "1000"
     :zookeeper.sync.time.ms         "1000"
+    :consumer.timeout.ms            "200"
     :auto.commit.interval.ms        "1000"
     :auto.offset.reset              "smallest"
-    :auto.commit.enable             "false" 
+    :auto.commit.enable             "true" 
   }
 
   :producer-config {  
