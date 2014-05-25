@@ -1,3 +1,16 @@
+;;Copyright 2014 Istvan Szukacs
+
+;;Licensed under the Apache License, Version 2.0 (the "License");
+;;you may not use this file except in compliance with the License.
+;;You may obtain a copy of the License at
+
+;;    http://www.apache.org/licenses/LICENSE-2.0
+
+;;Unless required by applicable law or agreed to in writing, software
+;;distributed under the License is distributed on an "AS IS" BASIS,
+;;WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;;See the License for the specific language governing permissions and
+;;limitations under the License
 (ns shovel.core
   (:require
     ;internal
@@ -12,7 +25,9 @@
 
 ;; Helpers 
 
-; Reading a file the safe way
+; Reading a file (the safe way)
+; the only problem if the input file is huge
+; todo check size and refuse to read over 100k
 (defn read-file
   "Returns {:ok string } or {:error...}"
   [^String file]
@@ -49,11 +64,10 @@
 ;; OPS
 (defn test-consumer 
   [config] 
-  (sh-consumer/test-iterate
-;  (sh-consumer/consume
-    (sh-consumer/message-streams 
-      (sh-consumer/consumer-connector config) 
-      (:topic config) 
+  (sh-consumer/default-iterator
+    (sh-consumer/message-streams
+      (sh-consumer/consumer-connector config)
+      (:topic config)
       (int (read-string (:thread.pool.size config))))))
 
 (defn test-producer

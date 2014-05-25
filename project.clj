@@ -10,6 +10,7 @@
     [zookeeper-clj                "0.9.3"]
     ;rest
     [org.clojure/clojure          "1.6.0"]
+    [org.clojure/core.async       "0.1.303.0-886421-alpha"]
     [org.clojure/tools.cli        "0.3.1"]
     [com.google.guava/guava       "16.0" ]
     [org.clojure/data.json        "0.2.4"]]
