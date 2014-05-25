@@ -2,7 +2,6 @@
 
 A simple Clojure library for processing Kafka streams using core.async
 
-
 ## Usage
 
 Tested only with Kafka 0.8.1.1
@@ -62,6 +61,24 @@ Consumer:
 ```
 lein uberjar && java -jar target/shovel-0.0.1-standalone.jar consumer-test -f conf/app.edn
 ```
+## CLOC
+
+```
+      17 text files.
+      17 unique files.
+     167 files ignored.
+
+http://cloc.sourceforge.net v 1.60  T=4.02 s (2.0 files/s, 173.1 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Maven                            1              1              4            291
+Clojure                          7             61            102            236
+-------------------------------------------------------------------------------
+SUM:                             8             62            106            527
+-------------------------------------------------------------------------------
+```
+
 ## License
 
 Copyright © 2014 Istvan Szukacs 
