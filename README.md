@@ -2,6 +2,10 @@
 
 A simple Clojure library for processing Kafka streams using core.async
 
+## Current version
+
+* [0.0.1](https://github.com/l1x/shovel/tree/0.0.1)
+
 ## Usage
 
 Tested only with Kafka 0.8.1.1
