@@ -52,16 +52,9 @@
   (doto (Properties.) 
     (.putAll (stringify-keys h))))
 
-(defn- lazy-iterate
-  [iterator]
-  (lazy-seq
-   (when (.hasNext iterator)
-     (cons (.next iterator) (lazy-iterate iterator)))))
-
 (defn- message-to-string
   [message]
   (String. (.message message)))
-  ;[(.topic message) (.offset message) (.partition message) (.key message) (.message message)])
 
 ; external 
 
@@ -80,19 +73,7 @@
   [streams]
   (println "################ test iterate ###########")
   (doseq [stream streams]
-    (let [iter (.iterator ^KafkaStream stream)]
-    (doseq [n (range 300)] 
-      (println n)
-        (try
-          (cond 
-            (.hasNext iter)
-              (println (str "look ma, next item! :: " (String. (.message (.next iter)))))
-            :else
-              (println "No more item"))
-
-        (catch Exception e
-          (println "Tajmaut!")))))))
-        
+    (doseq [message stream] (println (message-to-string message)))))
 
 (defn shutdown
   "Closes the connection to Zookeeper and stops consuming messages."
@@ -109,16 +90,6 @@
 
 
 
-
-
-
-(defn consume 
-  [streams]
-  (println "################ consume ###########")
-  [ (map #(lazy-iterate (.iterator ^KafkaStream %)) streams) ] )
-
-(defn get-messages [v]
-  [ (map message-to-string v) ] )
 
 
 
