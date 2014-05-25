@@ -1,11 +1,16 @@
-;; Copyright (c) Istvan Szukacs, 2014. All rights reserved.  The use
-;; and distribution terms for this software are covered by the Eclipse
-;; Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-;; which can be found in the file epl-v10.html at the root of this
-;; distribution.  By using this software in any fashion, you are
-;; agreeing to be bound by the terms of this license.  You must not
-;; remove this notice, or any other, from this software.
+;;Copyright 2014 Istvan Szukacs
 
+;;Licensed under the Apache License, Version 2.0 (the "License");
+;;you may not use this file except in compliance with the License.
+;;You may obtain a copy of the License at
+
+;;    http://www.apache.org/licenses/LICENSE-2.0
+
+;;Unless required by applicable law or agreed to in writing, software
+;;distributed under the License is distributed on an "AS IS" BASIS,
+;;WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;;See the License for the specific language governing permissions and
+;;limitations under the License.
 (ns 
   ^{:doc "
 
@@ -35,22 +40,17 @@
   shovel.consumer
   (:require
     ;internal
+    [shovel.helpers :refer [hashmap-to-properties]]
     ;external
-    [clojure.walk   :refer [stringify-keys]]
+    [clojure.core.async :as async :refer :all]
     [clojure.pprint :as pprint])
   (:import
     [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
     [kafka.javaapi.consumer ConsumerConnector                   ]
-    [kafka.message          MessageAndMetadata                  ]
-    [java.util              Properties                          ])
+    [kafka.message          MessageAndMetadata                  ])
   (:gen-class))
 
 ; internal 
-
-(defn- hashmap-to-properties
-  [h]
-  (doto (Properties.) 
-    (.putAll (stringify-keys h))))
 
 (defn- message-to-string
   [message]
@@ -59,37 +59,26 @@
 ; external 
 
 (defn consumer-connector
-  [h]
-  (println "################ consumer-connector ###########")
+  "returns a ConsumerConnector that can be used to create consumer streams"
+  ^ConsumerConnector [h]
   (let [config (ConsumerConfig. (hashmap-to-properties h))]
     (Consumer/createJavaConsumerConnector config)))
 
 (defn message-streams
-  [^ConsumerConnector consumer topic thread-pool-size]
-  (println "################ message-streams ###########")
+  "returning the message-streams for with a certain topic and thread-pool-size
+  message-streams can be processed in threads with simple blocking on empty queue"
+  ^java.util.ArrayList [^ConsumerConnector consumer ^String topic ^Integer thread-pool-size]
   (.get (.createMessageStreams consumer {topic thread-pool-size}) topic))
 
-(defn test-iterate
-  [streams]
-  (println "################ test iterate ###########")
-  (doseq [stream streams]
-    (doseq [message stream] (println (message-to-string message)))))
-
-(defn shutdown
-  "Closes the connection to Zookeeper and stops consuming messages."
-  [^ConsumerConnector consumer]
-  (.shutdown consumer))
-
-
-
-;#######################
-
-
-
-
-
-
-
-
+(defn default-iterator
+  "processing all streams in a thread and printing the message field for each message"
+  [^java.util.ArrayList streams]
+  (let [c (chan)]
+    ;; create a thread for each stream
+    (doseq [stream streams]
+      (thread (>!! c (doseq [message stream] (println (message-to-string message))))))
+    ;; read the channel forever
+    (while true
+      (<!! c))))
 
 
