@@ -31,3 +31,7 @@
   (doto (Properties.)
     (.putAll (stringify-keys h))))
 
+(defn uuid
+  "Returns a new java.util.UUID as string" 
+  []
+  (str (java.util.UUID/randomUUID)))

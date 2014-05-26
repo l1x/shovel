@@ -19,8 +19,8 @@
   shovel.producer
   (:require
     ;internal
+    [shovel.helpers :refer [hashmap-to-properties]]
     ;external
-    [clojure.walk   :refer [stringify-keys]]
     [clojure.pprint :as pprint])
   (:import
     [kafka.javaapi.producer Producer                    ]
@@ -29,11 +29,6 @@
   (:gen-class))
 
 ; internal 
-; move this to shovel.helpers
-(defn hashmap-to-properties
-  [h]
-  (doto (Properties.) 
-    (.putAll (stringify-keys h))))
 
 ; external 
 

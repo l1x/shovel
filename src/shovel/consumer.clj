@@ -40,9 +40,9 @@
   shovel.consumer
   (:require
     ;internal
-    [shovel.helpers :refer [hashmap-to-properties]]
+    [shovel.helpers :refer [hashmap-to-properties uuid]]
     ;external
-    [clojure.core.async :as async :refer :all]
+    [clojure.core.async :as async]
     [clojure.pprint :as pprint])
   (:import
     [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
@@ -53,8 +53,14 @@
 ; internal 
 
 (defn- message-to-string
+  "returns a string for a message"
   [message]
   (String. (.message message)))
+
+(defn- message-to-vec
+  "return a vector of all of the message fields"
+  [message]
+  [(.topic message) (.offset message) (.partition message) (.key message) (.message message)])
 
 ; external 
 
@@ -73,12 +79,16 @@
 (defn default-iterator
   "processing all streams in a thread and printing the message field for each message"
   [^java.util.ArrayList streams]
-  (let [c (chan)]
+  (let [c (async/chan)]
     ;; create a thread for each stream
-    (doseq [stream streams]
-      (thread (>!! c (doseq [message stream] (println (message-to-string message))))))
+    (doseq 
+      [stream streams]
+      (let [uuid (uuid)] 
+        (async/thread 
+          (async/>!! c 
+            (doseq 
+              [message stream] 
+              (println (str "uuid: " uuid " :: "(message-to-vec message))))))))
     ;; read the channel forever
     (while true
-      (<!! c))))
-
-
+      (async/<!! c))))
