@@ -58,29 +58,30 @@ zookeeper.connection.timeout.ms=1000000
 Producer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.1-standalone.jar producer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.0.2-standalone.jar producer-test -f conf/app.edn
 ```
 
 Consumer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.1-standalone.jar consumer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.0.2-standalone.jar consumer-test -f conf/app.edn
 ```
 ## CLOC
 
 ```
-      17 text files.
-      17 unique files.
-     167 files ignored.
+      19 text files.
+      19 unique files.
+     234 files ignored.
 
-http://cloc.sourceforge.net v 1.60  T=4.02 s (2.0 files/s, 173.1 lines/s)
+http://cloc.sourceforge.net v 1.60  T=3.63 s (2.2 files/s, 218.3 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Maven                            1              1              4            291
-Clojure                          7             61            102            236
+Maven                            1              1              4            320
+Clojure                          6             47             86            214
+HTML                             1             27              0             93
 -------------------------------------------------------------------------------
-SUM:                             8             62            106            527
+SUM:                             8             75             90            627
 -------------------------------------------------------------------------------
 ```
 
