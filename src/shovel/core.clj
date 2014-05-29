@@ -76,7 +76,8 @@
     (doseq [n (range 100)]
       (sh-producer/produce
         producer-connection
-        (sh-producer/message "userprofile_test" "asd" (str "this is my message" n))))))
+        ;move this to config
+        (sh-producer/message "user_profile_test" "asd" (str "this is my message" n))))))
 
 ;; CLI
 
@@ -109,9 +110,9 @@
       "print-config"
         (println config)
       "consumer-test"
-        (println (take 10 (first (test-consumer (get-in config [:ok :consumer-config])))))
+        (test-consumer (get-in config [:ok :consumer-config]))
       "producer-test"
-        (println (test-producer (get-in config [:ok :producer-config])))
+        (test-producer (get-in config [:ok :producer-config]))
       ;default
         (exit 1 (println "Dead end")))))
 

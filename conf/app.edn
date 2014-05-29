@@ -2,8 +2,8 @@
   :consumer-config {  
     :zookeeper.connect              "127.0.0.1:2181"
     :group.id                       "shovel-test-0"
-    :thread.pool.size               "1"
-    :topic                          "userprofile_test"
+    :thread.pool.size               "4"
+    :topic                          "user_profile_test"
     :zookeeper.session.timeout.ms   "1000"
     :zookeeper.sync.time.ms         "1000"
     ;:consumer.timeout.ms            "200"

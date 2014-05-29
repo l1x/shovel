@@ -1,18 +1,17 @@
-(defproject shovel "0.0.1"
-  :description "Simple Kafka consumer and producer"
-  :url "http://localhost"
+(defproject shovel "0.0.2"
+  :description "Simple Kafka consumer and producer using core.async"
+  :url "https://clojars.org/shovel"
   :license {:name " Apache License Version 2.0"
             :url "https://www.apache.org/licenses/LICENSE-2.0.txt"}
   :dependencies [
     ;kafka
-    [org.apache.kafka/kafka_2.10  "0.8.1"]
-    ;zookeeper
-    [zookeeper-clj                "0.9.3"]
+    [org.apache.kafka/kafka_2.10  "0.8.1.1"]
     ;rest
     [org.clojure/clojure          "1.6.0"]
     [org.clojure/core.async       "0.1.303.0-886421-alpha"]
     [org.clojure/tools.cli        "0.3.1"]
-    [com.google.guava/guava       "16.0" ]
+    [org.clojure/tools.logging    "0.2.6"]
+    ;[com.google.guava/guava       "16.0" ]
     [org.clojure/data.json        "0.2.4"]]
   :exclusions [
     javax.mail/mail
