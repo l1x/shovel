@@ -19,9 +19,10 @@
   shovel.producer
   (:require
     ;internal
-    [shovel.helpers :refer [hashmap-to-properties]]
+    [shovel.helpers         :refer [hashmap-to-properties] ]
     ;external
-    [clojure.pprint :as pprint])
+    [clojure.tools.logging  :refer [info warn error debug] ])
+    ;none
   (:import
     [kafka.javaapi.producer Producer                    ]
     [kafka.producer         KeyedMessage ProducerConfig ]
@@ -33,16 +34,17 @@
 ; external 
 
 (defn producer-connector
-  [h]
+  [^clojure.lang.PersistentArrayMap h]
+  (info "fn: producer-connector" " config: " h)
   (let [config (ProducerConfig. (hashmap-to-properties h))]
     (Producer. config)))
 
 (defn message
   [topic key value] 
-  (println topic key value)
+  (info "fn: message" " topic: " topic)
   (KeyedMessage. topic key value))
 
 (defn produce
   [^Producer producer ^KeyedMessage message]
-  (println producer message)
+  (info "fn: produce message: " message)
   (.send producer message))
