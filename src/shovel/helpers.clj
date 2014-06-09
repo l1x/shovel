@@ -20,14 +20,14 @@
     [clojure.walk   :refer [stringify-keys]]
     [clojure.pprint :as pprint])
   (:import
-    [java.util              Properties                          ]))
+    [java.util Properties]))
 
 ;int
 
 ;ext
 
 (defn hashmap-to-properties
-  [h]
+  ^java.util.Properties [^clojure.lang.PersistentArrayMap h]
   (doto (Properties.)
     (.putAll (stringify-keys h))))
 

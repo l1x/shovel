@@ -22,9 +22,22 @@
     <div id="readme" class="announce md">
       <article class="markdown-body entry-content">
         <h1>
-<a name="user-content-shovel" class="anchor" href="#shovel"><span class="octicon octicon-link"></span></a>shovel</h1>
+<a name="user-content-shovel" class="anchor" href="#shovel"><span class="octicon octicon-link"></span></a>Shovel</h1>
 
-<p>A simple Clojure library for processing Kafka streams using core.async</p>
+<p>A simple Clojure library for processing Kafka streams using core.async. It has a simple (high level) consumer
+and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
+
+<h2>
+<a name="user-content-releases-and-dependency-information" class="anchor" href="#releases-and-dependency-information"><span class="octicon octicon-link"></span></a>Releases and Dependency Information</h2>
+
+<p>Latest and greatest stable release is 0.0.3:</p>
+
+<ul>
+<li><a href="https://github.com/l1x/shovel/tree/0.0.3">0.0.3</a></li>
+</ul><p>Leiningen dependency information:</p>
+
+<div class="highlight highlight-clojure"><pre><span class="p">[</span><span class="nv">shovel</span> <span class="s">"0.0.3"</span><span class="p">]</span>
+</pre></div>
 
 <h2>
 <a name="user-content-usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
@@ -78,29 +91,30 @@ zookeeper.connection.timeout.ms=1000000
 
 <p>Producer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.0.1-standalone.jar producer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.0.3-standalone.jar producer-test -f conf/app.edn
 </code></pre>
 
 <p>Consumer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.0.1-standalone.jar consumer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.0.3-standalone.jar consumer-test -f conf/app.edn
 </code></pre>
 
 <h2>
 <a name="user-content-cloc" class="anchor" href="#cloc"><span class="octicon octicon-link"></span></a>CLOC</h2>
 
-<pre><code>      17 text files.
-      17 unique files.
-     167 files ignored.
+<pre><code>      20 text files.
+      20 unique files.
+     251 files ignored.
 
-http://cloc.sourceforge.net v 1.60  T=4.02 s (2.0 files/s, 173.1 lines/s)
+http://cloc.sourceforge.net v 1.60  T=4.56 s (1.8 files/s, 169.2 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Maven                            1              1              4            291
-Clojure                          7             61            102            236
+Maven                            1              1              4            293
+Clojure                          6             47             86            214
+HTML                             1             28              0             99
 -------------------------------------------------------------------------------
-SUM:                             8             62            106            527
+SUM:                             8             76             90            606
 -------------------------------------------------------------------------------
 </code></pre>
 
