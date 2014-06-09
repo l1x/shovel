@@ -3,9 +3,18 @@
 A simple Clojure library for processing Kafka streams using core.async. It has a simple (high level) consumer
 and a simple producer. Works with the Kafka 0.8.1 or newer.
 
-## Current version
+## Releases and Dependency Information
 
-* [0.0.2](https://github.com/l1x/shovel/tree/0.0.2)
+Latest and greatest stable release is 0.0.3:
+
+* [0.0.3](https://github.com/l1x/shovel/tree/0.0.3)
+
+Leiningen dependency information:
+
+```clojure
+[shovel "0.0.3"]
+```
+
 
 ## Usage
 
@@ -58,30 +67,30 @@ zookeeper.connection.timeout.ms=1000000
 Producer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.2-standalone.jar producer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.0.3-standalone.jar producer-test -f conf/app.edn
 ```
 
 Consumer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.2-standalone.jar consumer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.0.3-standalone.jar consumer-test -f conf/app.edn
 ```
 ## CLOC
 
 ```
-      19 text files.
-      19 unique files.
-     234 files ignored.
+      20 text files.
+      20 unique files.
+     251 files ignored.
 
-http://cloc.sourceforge.net v 1.60  T=3.63 s (2.2 files/s, 218.3 lines/s)
+http://cloc.sourceforge.net v 1.60  T=4.56 s (1.8 files/s, 169.2 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Maven                            1              1              4            320
+Maven                            1              1              4            293
 Clojure                          6             47             86            214
-HTML                             1             27              0             93
+HTML                             1             28              0             99
 -------------------------------------------------------------------------------
-SUM:                             8             75             90            627
+SUM:                             8             76             90            606
 -------------------------------------------------------------------------------
 ```
 

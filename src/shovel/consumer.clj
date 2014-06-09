@@ -57,7 +57,7 @@
   (String. (.message message)))
 
 (defn- message-to-vec
-  "return a vector of all of the message fields"
+  "returns a vector of all of the message fields"
   [^kafka.message.MessageAndMetadata message]
   [(.topic message) (.offset message) (.partition message) (.key message) (.message message)])
 
@@ -70,7 +70,7 @@
     (Consumer/createJavaConsumerConnector config)))
 
 (defn message-streams
-  "returning the message-streams for with a certain topic and thread-pool-size
+  "returning the message-streams with a certain topic and thread-pool-size
   message-streams can be processed in threads with simple blocking on empty queue"
   ^java.util.ArrayList [^ConsumerConnector consumer ^String topic ^Integer thread-pool-size]
   (.get (.createMessageStreams consumer {topic thread-pool-size}) topic))
@@ -87,7 +87,7 @@
           (async/>!! c 
             (doseq 
               [^kafka.message.MessageAndMetadata message stream] 
-              (println (str "uuid: " uuid " :: "(String. (nth (message-to-vec message) 4)))))))))
+              (println (message-to-vec message)))))))
     ;; read the channel forever
     (while true
       (async/<!! c))))
