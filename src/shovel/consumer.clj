@@ -66,7 +66,7 @@
 (defn consumer-connector
   "returns a ConsumerConnector that can be used to create consumer streams"
   ^ConsumerConnector [^clojure.lang.PersistentArrayMap h]
-  (let [config (ConsumerConfig. (hashmap-to-properties h))]
+  (let [config (ConsumerConfig. ((hashmap-to-properties h) :ok))]
     (Consumer/createJavaConsumerConnector config)))
 
 (defn message-streams

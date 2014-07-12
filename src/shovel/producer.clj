@@ -36,7 +36,7 @@
 (defn producer-connector
   [^clojure.lang.PersistentArrayMap h]
   (info "fn: producer-connector" " config: " h)
-  (let [config (ProducerConfig. (hashmap-to-properties h))]
+  (let [config (ProducerConfig. ((hashmap-to-properties h) :ok))]
     (Producer. config)))
 
 (defn message
