@@ -25,6 +25,11 @@
 
 ;; Helpers 
 
+; All function here should return a hash-map
+; either with {:ok return_value} or {:error "Ex" :fn.....}
+; the caller decides to log that exact error message or
+; change it to something else that way the 
+
 ; Reading a file (the safe way)
 ; the only problem if the input file is huge
 ; todo check size and refuse to read over 100k
@@ -39,6 +44,7 @@
         (throw (Exception. "Input is not a file"))) ;the input is not a file, throw exception
   (catch Exception e
     {:error "Exception" :fn "read-file" :exception (.getMessage e) }))) ; catch all exceptions
+                                                                        ; and return an error istead
 
 ;Parsing a string to Clojure data structures the safe way
 (defn parse-edn-string
