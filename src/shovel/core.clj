@@ -14,54 +14,18 @@
 (ns shovel.core
   (:require
     ;internal
-    [shovel.consumer            :as sh-consumer         ]
-    [shovel.producer            :as sh-producer         ]
+    ;mild ocd
+    [shovel.consumer   :as     sh-consumer    ]
+    [shovel.producer   :as     sh-producer    ]
+    [shovel.helpers    :refer [read-config]   ]
     ;external
-    [clojure.tools.cli          :refer [parse-opts]     ]
-    [clojure.edn                :as     edn             ])
+    [clojure.tools.cli :refer [parse-opts]    ])
   (:import 
     [java.io File])
   (:gen-class))
 
-;; Helpers 
-
-; Reading a file (the safe way)
-; the only problem if the input file is huge
-; todo check size and refuse to read over 100k
-(defn read-file
-  "Returns {:ok string } or {:error...}"
-  [^String file]
-  (try
-    (cond
-      (.isFile (File. file))
-        {:ok (slurp file) }                         ; if .isFile is true {:ok string}
-      :else
-        (throw (Exception. "Input is not a file"))) ;the input is not a file, throw exception
-  (catch Exception e
-    {:error "Exception" :fn "read-file" :exception (.getMessage e) }))) ; catch all exceptions
-
-;Parsing a string to Clojure data structures the safe way
-(defn parse-edn-string
-  [s]
-  (try
-    {:ok (clojure.edn/read-string s)}
-  (catch Exception e
-    {:error "Exception" :fn "parse-config" :exception (.getMessage e)})))
-
-;This function wraps the read-file and the parse-edn-string
-;so that it only return {:ok ... } or {:error ...} 
-(defn read-config 
-  [file]
-  (let 
-    [ file-string (read-file file) ]
-    (cond
-      (contains? file-string :ok)
-        ;this return the {:ok} or {:error} from parse-edn-string
-        (parse-edn-string (file-string :ok))
-      :else
-        file-string)))
-
 ;; OPS
+
 (defn test-consumer 
   [config] 
   (sh-consumer/default-iterator
