@@ -5,14 +5,14 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.
 
 ## Releases and Dependency Information
 
-Latest and greatest stable release is 0.0.3:
+Latest and greatest stable release is 0.0.4:
 
-* [0.0.3](https://github.com/l1x/shovel/tree/0.0.3)
+* [0.0.4](https://github.com/l1x/shovel/tree/0.0.4)
 
 Leiningen dependency information:
 
 ```clojure
-[shovel "0.0.3"]
+[shovel "0.0.4"]
 ```
 
 
@@ -67,13 +67,13 @@ zookeeper.connection.timeout.ms=1000000
 Producer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.3-standalone.jar producer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.0.4-standalone.jar producer-test -f conf/app.edn
 ```
 
 Consumer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.3-standalone.jar consumer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.0.4-standalone.jar consumer-test -f conf/app.edn
 ```
 ## CLOC
 
@@ -96,6 +96,6 @@ SUM:                             8             76             90            606
 
 ## License
 
-Copyright © 2014 Istvan Szukacs 
+Copyright © 2015 Istvan Szukacs 
 
 Distributed under the Apache License, Version 2.0 see LICENSE file.
