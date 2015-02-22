@@ -24,9 +24,11 @@
     [clojure.tools.logging  :as log                         ])
     ;none
   (:import
-    [kafka.javaapi.producer Producer                        ]
-    [kafka.producer         KeyedMessage ProducerConfig     ]
-    [java.util              Properties                      ])
+    [clojure.lang           PersistentHashMap PersistentArrayMap
+                            PersistentVector                    ]
+    [kafka.javaapi.producer Producer                            ]
+    [kafka.producer         KeyedMessage ProducerConfig         ]
+    [java.util              Properties                          ])
   (:gen-class))
 
 ; internal 
@@ -34,21 +36,22 @@
 ; external 
 
 (defn producer-connector
-  [^clojure.lang.PersistentArrayMap h]
-  (log/debug "fn: producer-connector" " config: " h)
+  [^PersistentArrayMap h]
+  (log/debug "fn: producer-connector" " params: " h)
   (let [config (ProducerConfig. ((hashmap-to-properties h) :ok))]
     (Producer. config)))
 
 (defn message
   (^KeyedMessage [topic key value] 
-    (log/debug "fn: message topic: " topic)
+    (log/debug "fn: message params: " topic key value)
     (KeyedMessage. topic key value))
   (^KeyedMessage [topic value]
-    (log/debug "fn: message topic: " topic)
+    (log/debug "fn: message params: " topic value)
     (KeyedMessage. topic nil value)))
 
 (defn produce
   [^Producer producer ^KeyedMessage message]
-  (log/debug "fn: produce message: " message)
+  (log/debug "fn: produce params: " producer message)
+  ;should own the return of this
   (.send producer message))
 
