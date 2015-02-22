@@ -7,20 +7,20 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.
 
 Latest and greatest stable release is 0.0.4:
 
-* [0.0.4](https://github.com/l1x/shovel/tree/0.0.4)
+* [0.1.1](https://github.com/l1x/shovel/tree/0.1.1)
 
 Leiningen dependency information:
 
 ```clojure
-[shovel "0.0.4"]
+[shovel "0.1.1"]
 ```
 
 
 ## Usage
 
-Tested only with Kafka 0.8.1.1
+Tested only with Kafka 0.8.2.0
 
-[0.8.1.1 Release Notes](https://archive.apache.org/dist/kafka/0.8.1.1/RELEASE_NOTES.html)
+[0.8.2.0 Release Notes](https://archive.apache.org/dist/kafka/0.8.2.0/RELEASE_NOTES.html)
 
 ### Download Kafka and set up the dev environment
 
@@ -67,30 +67,30 @@ zookeeper.connection.timeout.ms=1000000
 Producer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.4-standalone.jar producer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.1.1-standalone.jar producer-test -f conf/app.edn
 ```
 
 Consumer:
 
 ```
-lein uberjar && java -jar target/shovel-0.0.4-standalone.jar consumer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.1.1-standalone.jar consumer-test -f conf/app.edn
 ```
 ## CLOC
 
 ```
-      20 text files.
-      20 unique files.
-     251 files ignored.
+      23 text files.
+      22 unique files.
+      15 files ignored.
 
-http://cloc.sourceforge.net v 1.60  T=4.56 s (1.8 files/s, 169.2 lines/s)
+http://cloc.sourceforge.net v 1.62  T=3.25 s (2.8 files/s, 300.5 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
+Clojure                          7             64             98            330
 Maven                            1              1              4            293
-Clojure                          6             47             86            214
-HTML                             1             28              0             99
+HTML                             1             38              0            150
 -------------------------------------------------------------------------------
-SUM:                             8             76             90            606
+SUM:                             9            103            102            773
 -------------------------------------------------------------------------------
 ```
 
