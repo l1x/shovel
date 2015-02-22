@@ -17,12 +17,16 @@
   (:require
     ;internal
     ;external
-    [clojure.walk   :refer [stringify-keys]]
-    [clojure.pprint :as pprint]
-    [clojure.edn    :as edn])
+    [clojure.walk           :refer [stringify-keys] ]
+    [clojure.pprint         :as pprint              ]
+    [clojure.edn            :as edn                 ]
+    [clojure.tools.logging  :as log                 ])
   (:import
-    [java.util Properties]
-    [java.io File]))
+    [java.io      File                                  ]
+    [java.util    Properties                            ]
+    [clojure.lang PersistentHashMap PersistentArrayMap  ]
+    )
+  (:gen-class))
 
 
 ;; Helpers
@@ -37,10 +41,15 @@
 ;ext
 
 (defn hashmap-to-properties
-  ^java.util.Properties [^clojure.lang.PersistentArrayMap h]
+  ^PersistentArrayMap [^PersistentArrayMap h]
+  (log/debug "hashmap-to-properties input: " h)
   (cond
     (not (nil? h))
-      {:ok (doto (Properties.) (.putAll (stringify-keys h)))}
+      (do
+        (let [ ^Properties          properties  (doto (Properties.) (.putAll (stringify-keys h)))
+               ^PersistentArrayMap  return      {:ok properties}                                  ]
+          (log/debug "hashmap-to-properties output: " return)
+          return))
     :else
       {:error "Input is nil"}))
 
@@ -49,58 +58,62 @@
   []
   (str (java.util.UUID/randomUUID)))
 
-; Reading a file (the safe way)
-; the only problem if the input file is huge
-; todo check size and refuse to read over 100k
 (defn read-file
   "Returns {:ok string } or {:error...}"
   [^String file]
+  (log/debug "read-file input: " file)
   (try
     (cond
-      (nil? file)
-      (throw (Exception. "Input is nil"))
       (.isFile (File. file))
-      {:ok (slurp file) }
+        (do
+          (let [  ^String file-content (slurp file)
+                  return {:ok file-content }]
+            (log/debug "read-file output: " return)
+            return))
       :else
-      (throw (Exception. (str " is not a file: "))))
-    ;Catch all
-    (catch Exception e
-      {:error "Exception" :fn "read-file" :exception (.getMessage e) })))
+        (do
+          (log/debug "Exception: Input is not a file")
+          (throw (Exception. "Input is not a file")))) ;the input is not a file, throw exception
+  (catch Exception e
+    (do
+      (let [return {:error "Exception" :fn "read-file" :exception (.getMessage e) }]
+        (log/debug "Exception: " return)
+        return))))) ; catch all exceptions
 
-;Parsing a string to Clojure data structures the safe way
 (defn parse-edn-string
+  "Returns the Clojure data structure representation of s"
   [s]
   (try
     {:ok (clojure.edn/read-string s)}
-    (catch Exception e
-      {:error "Exception" :fn "parse-config" :exception (.getMessage e)})))
+  (catch Exception e
+    {:error "Exception" :fn "parse-config" :exception (.getMessage e)})))
 
-;This function wraps the read-file and the parse-edn-string
 (defn read-config
+  "Returns the Clojure hashmap version of the config file"
   [file]
-  (let [file-string (read-file file)]
+  (log/debug "read-config input: " file)
+  (let
+    [ file-string (read-file file) ]
     (cond
-      ;file could be successfully read
       (contains? file-string :ok)
-      (let [ config (parse-edn-string (file-string :ok))  ]
-        (cond
-          (contains? config :ok)
-          ;return {:ok hash-map}
-          {:ok config}
-          (contains? config :error)
-          ;return
-          {:error "Exception" :fn "read-config"
-           :exception (str "Parsing the EDN string into Clojure (hash-map) has failed: " (config :exception))}
-          :else
-          ;return
-          {:error "Exception" :fn "read-config"
-           :exception (str "Something unexpected is returned from fn read-file" file-string)}))
-      ;file cannot be read
-      (contains? file-string :error)
-      ;return
-      {:error "Exception" :fn "read-config"
-       :exception (str "Reading the file has failed. Reason: " file (file-string :exception))}
+        ;this return the {:ok} or {:error} from parse-edn-string
+        (parse-edn-string (file-string :ok))
       :else
-      ;return
-      {:error "Exception" :fn "read-config"
-       :exception (str "Reading the following file has failed with something unexpected: " file-string)})))
+        ;the read-file operation returned an error
+        file-string)))
+
+(defn exit [n]
+  (log/info "init :: stop")
+  (System/exit n))
+
+(defn config-ok [config]
+  (log/info "config [ok]")
+  (log/debug config))
+
+(defn config-err
+  [config]
+  (log/error "config [error]")
+  (log/error config)
+  (exit 1))
+
+;(def ^PersistentHashMap config (read-config "conf/app.edn"))

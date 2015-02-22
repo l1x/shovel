@@ -42,52 +42,67 @@
     ;internal
     [shovel.helpers :refer [hashmap-to-properties uuid]]
     ;external
-    [clojure.core.async :as async])
+    [clojure.tools.logging  :as log                         ]
+    )
   (:import
+    [clojure.lang           PersistentHashMap PersistentArrayMap 
+                            PersistentVector                    ]
     [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
     [kafka.javaapi.consumer ConsumerConnector                   ]
-    [kafka.message          MessageAndMetadata                  ])
+    [kafka.message          MessageAndMetadata                  ]
+    [java.util              ArrayList                           ])
   (:gen-class))
 
 ; internal 
+; external 
 
-(defn- message-to-string
+(defn message-to-string
   "returns a string for a message"
-  [^kafka.message.MessageAndMetadata message]
+  ^String [^MessageAndMetadata message]
+  (log/debug "fn: message-to-string params: " message)
   (String. (.message message)))
 
-(defn- message-to-vec
+(defn message-to-vec
   "returns a vector of all of the message fields"
-  [^kafka.message.MessageAndMetadata message]
+  ^PersistentVector [^MessageAndMetadata message]
+  (log/debug "fn: message-to-vec params: " message)
   [(.topic message) (.offset message) (.partition message) (.key message) (.message message)])
-
-; external 
 
 (defn consumer-connector
   "returns a ConsumerConnector that can be used to create consumer streams"
-  ^ConsumerConnector [^clojure.lang.PersistentArrayMap h]
+  ^ConsumerConnector [^PersistentArrayMap h]
+  (log/debug "fn: consumer-connector params: " h)
   (let [config (ConsumerConfig. ((hashmap-to-properties h) :ok))]
     (Consumer/createJavaConsumerConnector config)))
 
 (defn message-streams
   "returning the message-streams with a certain topic and thread-pool-size
   message-streams can be processed in threads with simple blocking on empty queue"
-  ^java.util.ArrayList [^ConsumerConnector consumer ^String topic ^Integer thread-pool-size]
+  ^ArrayList [^ConsumerConnector consumer ^String topic ^Integer thread-pool-size]
+  (log/info "fn: message-streams params: " consumer topic thread-pool-size)
   (.get (.createMessageStreams consumer {topic thread-pool-size}) topic))
 
-(defn default-iterator
-  "processing all streams in a thread and printing the message field for each message"
-  [^java.util.ArrayList streams]
-  (let [c (async/chan)]
-    ;; create a thread for each stream
-    (doseq 
-      [^kafka.consumer.KafkaStream stream streams]
-      (let [uuid (uuid)] 
-        (async/thread 
-          (async/>!! c 
-            (doseq 
-              [^kafka.message.MessageAndMetadata message stream] 
-              (println (message-to-vec message)))))))
-    ;; read the channel forever
-    (while true
-      (async/<!! c))))
+(defn messages
+  "returning a lazy-seq of streams each has a lazy-seq of messages"
+  [^ArrayList streams] 
+  (for [  ^KafkaStream        stream  streams 
+          ^MessageAndMetadata message stream  ] 
+      ;return
+      (message-to-vec message)))
+
+; (defn messages-channel
+;   "return a channel that can be consumed from several threads"
+;   [^ArrayList streams]
+;   (let [c (async/chan 256)]
+;   (for [ ^KafkaStream stream streams ]
+;     (go-loop [ ^MessageAndMetadata message stream ]
+;       (async/>!! c (sh-consumer/message-to-vec message))
+;       (recur))))
+
+;     (for
+;       [^KafkaStream stream streams]
+;         (async/thread
+;           (async/>!! c
+;             (doseq
+;               [^MessageAndMetadata message stream]
+;               (sh-consumer/message-to-vec message))))))

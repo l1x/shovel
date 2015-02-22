@@ -1,13 +1,12 @@
-{ 
+{
+  :common {
+    :consumer-topic "shovel-test-0"
+    :producer-topic "shovel-test-0"
+  } 
+
   :consumer-config {  
-    :zookeeper.connect              "127.0.0.1:2181"
+    :zookeeper.connect              "localhost:2181"
     :group.id                       "shovel-test-0"
-    :thread.pool.size               "4"
-    :topic                          "user_profile_test"
-    :zookeeper.session.timeout.ms   "1000"
-    :zookeeper.sync.time.ms         "1000"
-    ;:consumer.timeout.ms            "200"
-    :auto.commit.interval.ms        "1000"
     :auto.offset.reset              "smallest"
     :auto.commit.enable             "true" 
   }
