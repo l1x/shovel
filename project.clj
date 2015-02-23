@@ -1,4 +1,4 @@
-(defproject shovel "0.1.1"
+(defproject shovel "0.1.2"
   :description "Simple Kafka consumer and producer using core.async"
   :url "https://clojars.org/shovel"
   :license {:name " Apache License Version 2.0"
@@ -37,4 +37,5 @@
     "-Dcom.sun.management.jmxremote.ssl=false"
     ;"-Xprof" "-Xrunhprof"
   ]
+  :repl-options {:init-ns shovel.consumer}
   :main shovel.core)

@@ -89,5 +89,7 @@
   (for [  ^KafkaStream        stream  streams 
           ^MessageAndMetadata message stream  ] 
       ;return
-      (message-to-vec message)))
+      (do
+        (log/debug message stream)
+        (message-to-vec message))))
 
