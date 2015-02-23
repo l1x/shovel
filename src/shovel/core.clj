@@ -57,55 +57,78 @@
 
 ;; OPS
 
-(defn test-consumer
-  [config topic] 
-  (log/info "fn: test-consumer params: " config topic)
-  (default-iterator
-    (sh-consumer/message-streams
-      (sh-consumer/consumer-connector config)
-      topic
-      (int 2))))
-
 (defn test-producer
   [config topic]
   (log/info "fn: test-producer params: " config)
   (let [producer-connection (sh-producer/producer-connector config) counter (atom 0)]
-    (doseq [n (range 1000000)]
+    (doseq [n (range 100)]
       (do
-        (mark! messages-written)
         (log/debug n)
-        (cond (= @counter 100000) (do (reset! counter 0) (log/info (rates messages-written))) :else (do (log/debug @counter) (swap! counter inc)))
+        (cond 
+          (= @counter 10) 
+          (do 
+            (reset! counter 0) 
+            (log/info (rates messages-written))) 
+          :else 
+          (do 
+            (log/debug @counter) 
+            (swap! counter inc)));end cond
+        (mark! messages-written)
         (sh-producer/produce
           producer-connection
-          ;move this to config
           (sh-producer/message topic "asd" (str "this is my message" n))))))
   
   (log/info {:ok :ok}))
 
-
-(defn new-consumer-messages 
+(defn test-consumer 
   [config] 
-  (log/info "fn: new-consumer-messages params: " config)
-  (let [  config  (get-in config [:ok :consumer-config]) 
-          topic   (get-in config [:ok :common :consumer-topic])
-          message-stream (sh-consumer/messages
-                          (sh-consumer/message-streams 
-                            (sh-consumer/consumer-connector config) 
-                            "shovel-test-0"
-                            (int 2))) 
-          counter (atom 0)                                              ]
+  (log/info "####################fn: new-consumer-messages params: " config)
+  (let [stat-chan (async/chan 8)]
+    (dotimes [i 3]
+    (async/thread
+      (let [  consumer-config (get-in config [:ok :consumer-config]) 
+              consumer-topic  (get-in config [:ok :common :consumer-topic])
+              message-stream  (sh-consumer/messages
+                                (sh-consumer/message-streams 
+                                  (sh-consumer/consumer-connector consumer-config) ;connector
+                                  consumer-topic                                   ;topic
+                                  (int 1)))                                        ;threadpool size, must be 1
+              counter         (atom 0)
+              message-counter (atom 0)]
 
-        (doseq [message message-stream]
+        ;limit the amount of memory / thread
+        ;
+        ;(loop [x (range 10)] (print x) (recur (rest x)))
+        ;
+        ;(loop [message message-stream] (println (first x)) (recur (rest x)))
+        (loop [[message & stream-rest] message-stream] 
           (do 
+            (swap! message-counter inc)
+            (log/debug "message counter: " @message-counter)
             (mark! messages-read)
-            (cond (= @counter 100000) (do (reset! counter 0) (log/info (rates messages-read))) :else (do (log/debug @counter) (swap! counter inc)))
-            (log/debug message)))))
-            
-(defn end-to-end [config]
-  (async/thread 
-    (test-producer (get-in config [:ok :producer-config]) (get-in config [:ok :common :producer-topic])))
-  (new-consumer-messages config))
+            (cond (= @counter 100000) 
+              (do 
+                (reset! counter 0) 
+                (log/debug (rates messages-read))
+                (async/>!! stat-chan (rates messages-read))) 
+            :else 
+              (do 
+                (log/debug @counter) 
+                (swap! counter inc)))
+            (log/debug message @counter stat-chan))
+        (recur stream-rest)))))
     
+    (while true 
+      (async/<!!
+        (async/go
+          (let [[result source] (async/alts! [stat-chan (async/timeout 60000)])]
+            (if (= source stat-chan)
+              (log/info "main-loop: " result)
+                ;else - timeout 
+                (do 
+                  (log/info "Channel timed out. Stopping...") 
+                  (exit 0)))))))))
+            
 ;; CLI
 
 (def cli-options
@@ -135,13 +158,9 @@
       "print-config"
         (println config)
       "consumer-test"
-        (test-consumer (get-in config [:ok :consumer-config]) (get-in config [:ok :common :consumer-topic]))
+        (test-consumer config)
       "producer-test"
         (test-producer (get-in config [:ok :producer-config]) (get-in config [:ok :common :producer-topic]))
-      "end-to-end"
-        (end-to-end config)
-      "new-consumer-messages"
-        (new-consumer-messages config)
       ;default
         (do
           (log/error "Missing arugments")

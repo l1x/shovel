@@ -1,4 +1,4 @@
-(defproject shovel "0.1.1"
+(defproject shovel "0.1.2"
   :description "Simple Kafka consumer and producer using core.async"
   :url "https://clojars.org/shovel"
   :license {:name " Apache License Version 2.0"
@@ -12,7 +12,9 @@
     [org.clojure/tools.cli        "0.3.1"]
     [org.clojure/tools.logging    "0.2.6"]
     [org.clojure/data.json        "0.2.4"]
-    [metrics-clojure              "2.4.0"]]
+    [metrics-clojure              "2.4.0"]
+    [org.clojure/test.check       "0.7.0"]
+  ]
   :exclusions [
     javax.mail/mail
     javax.jms/jms
@@ -35,4 +37,5 @@
     "-Dcom.sun.management.jmxremote.ssl=false"
     ;"-Xprof" "-Xrunhprof"
   ]
+  :repl-options {:init-ns shovel.consumer}
   :main shovel.core)

@@ -18,7 +18,6 @@
     ;internal
     ;external
     [clojure.walk           :refer [stringify-keys] ]
-    [clojure.pprint         :as pprint              ]
     [clojure.edn            :as edn                 ]
     [clojure.tools.logging  :as log                 ])
   (:import
@@ -40,18 +39,17 @@
 
 ;ext
 
-(defn hashmap-to-properties
-  ^PersistentArrayMap [^PersistentArrayMap h]
+(defmulti hashmap-to-properties identity)
+
+(defmethod hashmap-to-properties nil 
+  [_]  
+  (hashmap-to-properties {}))
+(defmethod hashmap-to-properties :default 
+  ^Properties [^PersistentArrayMap h] 
   (log/debug "hashmap-to-properties input: " h)
-  (cond
-    (not (nil? h))
-      (do
-        (let [ ^Properties          properties  (doto (Properties.) (.putAll (stringify-keys h)))
-               ^PersistentArrayMap  return      {:ok properties}                                  ]
-          (log/debug "hashmap-to-properties output: " return)
-          return))
-    :else
-      {:error "Input is nil"}))
+    (let [ ^Properties properties (doto (Properties.) (.putAll (stringify-keys h)))]
+      (log/debug "hashmap-to-properties output: " properties)
+      properties))
 
 (defn uuid
   "Returns a new java.util.UUID as string" 
@@ -84,7 +82,7 @@
   "Returns the Clojure data structure representation of s"
   [s]
   (try
-    {:ok (clojure.edn/read-string s)}
+    {:ok (edn/read-string s)}
   (catch Exception e
     {:error "Exception" :fn "parse-config" :exception (.getMessage e)})))
 

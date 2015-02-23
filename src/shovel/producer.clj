@@ -36,9 +36,10 @@
 ; external 
 
 (defn producer-connector
-  [^PersistentArrayMap h]
+  ^Producer [^PersistentArrayMap h]
   (log/debug "fn: producer-connector" " params: " h)
-  (let [config (ProducerConfig. ((hashmap-to-properties h) :ok))]
+  (let [ ^Properties      properties  (hashmap-to-properties h)
+         ^ProducerConfig  config      (ProducerConfig. properties) ]
     (Producer. config)))
 
 (defn message
