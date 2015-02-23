@@ -50,7 +50,7 @@
     [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
     [kafka.javaapi.consumer ConsumerConnector                   ]
     [kafka.message          MessageAndMetadata                  ]
-    [java.util              ArrayList                           ])
+    [java.util              ArrayList Properties                ])
   (:gen-class))
 
 ; internal 
@@ -72,7 +72,8 @@
   "returns a ConsumerConnector that can be used to create consumer streams"
   ^ConsumerConnector [^PersistentArrayMap h]
   (log/debug "fn: consumer-connector params: " h)
-  (let [config (ConsumerConfig. ((hashmap-to-properties h) :ok))]
+  (let [  ^Properties     properties  (hashmap-to-properties h)
+          ^ConsumerConfig config      (ConsumerConfig. properties)  ]
     (Consumer/createJavaConsumerConnector config)))
 
 (defn message-streams
@@ -90,19 +91,3 @@
       ;return
       (message-to-vec message)))
 
-; (defn messages-channel
-;   "return a channel that can be consumed from several threads"
-;   [^ArrayList streams]
-;   (let [c (async/chan 256)]
-;   (for [ ^KafkaStream stream streams ]
-;     (go-loop [ ^MessageAndMetadata message stream ]
-;       (async/>!! c (sh-consumer/message-to-vec message))
-;       (recur))))
-
-;     (for
-;       [^KafkaStream stream streams]
-;         (async/thread
-;           (async/>!! c
-;             (doseq
-;               [^MessageAndMetadata message stream]
-;               (sh-consumer/message-to-vec message))))))

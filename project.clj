@@ -12,7 +12,9 @@
     [org.clojure/tools.cli        "0.3.1"]
     [org.clojure/tools.logging    "0.2.6"]
     [org.clojure/data.json        "0.2.4"]
-    [metrics-clojure              "2.4.0"]]
+    [metrics-clojure              "2.4.0"]
+    [org.clojure/test.check       "0.7.0"]
+  ]
   :exclusions [
     javax.mail/mail
     javax.jms/jms
