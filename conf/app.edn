@@ -7,7 +7,7 @@
   :consumer-config {  
     :zookeeper.connect              "localhost:2181"
     :group.id                       "shovel-test-0"
-    :auto.offset.reset              "largest"
+    :auto.offset.reset              "smallest"
     :auto.commit.enable             "true" 
   }
 

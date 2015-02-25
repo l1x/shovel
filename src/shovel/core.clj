@@ -14,13 +14,15 @@
 (ns shovel.core
   (:require
     ;internal
-    [shovel.consumer        :as     sh-consumer                 ]
-    [shovel.producer        :as     sh-producer                 ]
-    [shovel.helpers         :refer   :all                       ]
+    [shovel.consumer        :as     sh-consumer                         ]
+    [shovel.producer        :as     sh-producer                         ]
+    [shovel.helpers         :refer   :all                               ]
     ;external
-    [clojure.tools.logging  :as     log                         ]
-    [metrics.meters         :refer  [defmeter mark! rates]      ]
-    [metrics.core           :refer  [new-registry]              ]
+    [clojure.tools.logging  :as     log                                 ]
+    [metrics.meters         :refer  [defmeter mark! rates]              ]
+    [metrics.histograms     :refer  [defhistogram update! percentiles]  ]
+    [metrics.counters       :refer  [defcounter inc! value]             ]
+    [metrics.core           :refer  [new-registry]                      ]
     [clojure.core.async     :as     async         ]
     [clojure.tools.cli      :refer  [parse-opts]  ])
   (:import 
@@ -33,50 +35,42 @@
 
 ;; metrics 
 (def reg (new-registry))
-(defmeter reg messages-read)
-(defmeter reg messages-written)
+(defmeter     reg messages-read)
+(defmeter     reg messages-written)
+(defcounter   reg bytes-read)
+(defcounter   reg bytes-written)
+
 
 ;; Helpers
-;;
-(defn default-iterator
-  "processing all streams in a thread and printing the message field for each message"
-  [^ArrayList streams]
-  (let [c (async/chan)]
-    ;; create a thread for each stream
-    (doseq
-      [^KafkaStream stream streams]
-      (let [uuid (uuid)]
-        (async/thread
-          (async/>!! c
-            (doseq
-              [^MessageAndMetadata message stream]
-              (sh-consumer/message-to-vec message))))))
-    ;; read the channel forever
-    (while true
-      (async/<!! c))))
 
+  (defn total-memory [obj]
+    (let [baos (java.io.ByteArrayOutputStream.)]
+      (with-open [oos (java.io.ObjectOutputStream. baos)]
+        (.writeObject oos obj))
+      (count (.toByteArray baos))))
+;;
 ;; OPS
 
 (defn test-producer
   [config topic]
   (log/info "fn: test-producer params: " config)
   (let [producer-connection (sh-producer/producer-connector config) counter (atom 0)]
-    (doseq [n (range 100)]
+    (doseq [n (range 1000000)]
       (do
         (log/debug n)
         (cond 
-          (= @counter 10) 
+          (= @counter 10000) 
           (do 
             (reset! counter 0) 
-            (log/info (rates messages-written))) 
+            (log/info (rates messages-written) (value bytes-written))) 
           :else 
           (do 
             (log/debug @counter) 
             (swap! counter inc)));end cond
         (mark! messages-written)
-        (sh-producer/produce
-          producer-connection
-          (sh-producer/message topic "asd" (str "this is my message" n))))))
+        (let [message (sh-producer/message topic "asd" (str "this is my message" n))] 
+          (inc! bytes-written (total-memory message))
+          (sh-producer/produce producer-connection  message)))))
   
   (log/info {:ok :ok}))
 
@@ -84,33 +78,27 @@
   [config] 
   (log/info "####################fn: new-consumer-messages params: " config)
   (let [stat-chan (async/chan 8)]
-    (dotimes [i 3]
+    (dotimes [i 1]
     (async/thread
-      (let [  consumer-config (get-in config [:ok :consumer-config]) 
-              consumer-topic  (get-in config [:ok :common :consumer-topic])
-              message-stream  (sh-consumer/messages
-                                (sh-consumer/message-streams 
-                                  (sh-consumer/consumer-connector consumer-config) ;connector
-                                  consumer-topic                                   ;topic
-                                  (int 1)))                                        ;threadpool size, must be 1
-              counter         (atom 0)
-              message-counter (atom 0)]
+      (let [  consumer-config     (get-in config [:ok :consumer-config]) 
+              consumer-topic      (get-in config [:ok :common :consumer-topic])
+              consumer-connector  (sh-consumer/consumer-connector consumer-config)
+              message-streams     (sh-consumer/message-streams consumer-connector consumer-topic (int 1))
+              messages            (sh-consumer/messages message-streams)
+              counter             (atom 0)
+              message-counter     (atom 0)        ]
 
-        ;limit the amount of memory / thread
-        ;
-        ;(loop [x (range 10)] (print x) (recur (rest x)))
-        ;
-        ;(loop [message message-stream] (println (first x)) (recur (rest x)))
-        (loop [[message & stream-rest] message-stream] 
+        (loop [[message & stream-rest] messages] 
           (do 
             (swap! message-counter inc)
             (log/debug "message counter: " @message-counter)
             (mark! messages-read)
-            (cond (= @counter 100000) 
+            (inc! bytes-read (total-memory message))
+            (cond (= @counter 10000) 
               (do 
                 (reset! counter 0) 
                 (log/debug (rates messages-read))
-                (async/>!! stat-chan (rates messages-read))) 
+                (async/>!! stat-chan {:rates (rates messages-read) :percentiles (value bytes-read) } )) 
             :else 
               (do 
                 (log/debug @counter) 
