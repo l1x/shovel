@@ -1,18 +1,18 @@
-# Shovel
+ Shovel
 
 A simple Clojure library for processing Kafka streams using core.async. It has a simple (high level) consumer
 and a simple producer. Works with the Kafka 0.8.1 or newer.
 
 ## Releases and Dependency Information
 
-Latest and greatest stable release is 0.1.2:
+Latest and greatest stable release is 0.1.3:
 
-* [0.1.2](https://github.com/l1x/shovel/tree/0.1.2)
+* [0.1.3](https://github.com/l1x/shovel/tree/0.1.3)
 
 Leiningen dependency information:
 
 ```clojure
-[shovel "0.1.2"]
+[shovel "0.1.3"]
 ```
 
 
