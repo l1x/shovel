@@ -19,7 +19,7 @@
   shovel.producer
   (:require
     ;internal
-    [shovel.helpers         :refer [hashmap-to-properties]  ]
+    [shovel.helpers         :refer :all                     ]
     ;external
     [clojure.tools.logging  :as log                         ])
     ;none
@@ -53,6 +53,10 @@
 (defn produce
   [^Producer producer ^KeyedMessage message]
   (log/debug "fn: produce params: " producer message)
-  ;should own the return of this
-  (.send producer message))
+  ;defnx does not support type hints yet
+  (try 
+    (do
+    {:ok (.send producer message)})
+  (catch Exception e 
+    { :error "Exception" :fn "produce" :exception (.getMessage e) :e e})))
 

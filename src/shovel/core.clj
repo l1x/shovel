@@ -28,6 +28,7 @@
   (:import 
     [java.io                File                                ]
     [java.util              ArrayList                           ]
+    [java.util.concurrent   ThreadPoolExecutor$DiscardPolicy    ]
     [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
     [kafka.javaapi.consumer ConsumerConnector                   ]
     [kafka.message          MessageAndMetadata                  ])
@@ -43,6 +44,16 @@
 
 ;; Helpers
 
+(def handler (proxy [Thread$UncaughtExceptionHandler] [] 
+  (uncaughtException [thread exception]
+    (log/error thread exception))))
+
+(log/info (Thread/setDefaultUncaughtExceptionHandler handler))
+
+
+
+  ;;this isn't really helpful to measure how many bytes we are sending 
+  ;;but probably worth to try to correlate with other better measurements
   (defn total-memory [obj]
     (let [baos (java.io.ByteArrayOutputStream.)]
       (with-open [oos (java.io.ObjectOutputStream. baos)]
@@ -51,32 +62,59 @@
 ;;
 ;; OPS
 
+(defnx safe-producer-connector [config] 
+  (do 
+    (let [return {:ok (sh-producer/producer-connector config)}]
+      (log/debug "fn:safe-producer-connector return: " return)
+      return)))
+
+(defnx safe-producer-produce [producer-connection message]
+  (do
+    (let [return {:ok (sh-producer/produce producer-connection  message)}]
+      (log/debug "fn:safe-producer-produce return: " return)
+      return)))
+
 (defn test-producer
   [config topic]
-  (log/info "fn: test-producer params: " config)
-  (let [producer-connection (sh-producer/producer-connector config) counter (atom 0)]
+  (log/debug "fn: test-producer params: " config topic)
+  (let [producer-connection-hm (safe-producer-connector config) counter (atom 0)]
+    (cond 
+      (contains? producer-connection-hm :ok) 
+        (def producer-connection (:ok producer-connection-hm)) 
+    :else 
+      (do 
+        (log/error "Cannot connect....")
+        (exit 1)))
+
+    (log/info producer-connection)
     (doseq [n (range 1000000)]
       (do
-        (log/debug n)
+        (log/debug "n: " n)
+        ;send the message
+        (let [message (sh-producer/message topic "asd" (str "{this is my message : " n "}"))] 
+          (inc! bytes-written (total-memory message))
+          (log/debug 
+            "fn:safe-producer-produce : " producer-connection 
+            "message: " message 
+            "produce:" (safe-producer-produce producer-connection message)))
+        ;mark the meter
+        (mark! messages-written)
+        ;if the counter is 10000 reset the counter and log the metrics
         (cond 
-          (= @counter 10000) 
+          (= @counter 10000) ;if
           (do 
-            (reset! counter 0) 
+            (reset! counter 0) ;not sure if thread safe
             (log/info (rates messages-written) (value bytes-written))) 
-          :else 
+        :else 
           (do 
             (log/debug @counter) 
             (swap! counter inc)));end cond
-        (mark! messages-written)
-        (let [message (sh-producer/message topic "asd" (str "this is my message" n))] 
-          (inc! bytes-written (total-memory message))
-          (sh-producer/produce producer-connection  message)))))
-  
-  (log/info {:ok :ok}))
+        )))
+  {:ok :ok})
 
 (defn test-consumer 
   [config] 
-  (log/info "####################fn: new-consumer-messages params: " config)
+  (log/info "fn: new-consumer-messages params: " config)
   (let [stat-chan (async/chan 8)]
     (dotimes [i 1]
     (async/thread
@@ -109,7 +147,7 @@
     (while true 
       (async/<!!
         (async/go
-          (let [[result source] (async/alts! [stat-chan (async/timeout 60000)])]
+          (let [[result source] (async/alts! [stat-chan (async/timeout 10000)])]
             (if (= source stat-chan)
               (log/info "main-loop: " result)
                 ;else - timeout 
@@ -148,10 +186,14 @@
       "consumer-test"
         (test-consumer config)
       "producer-test"
-        (test-producer (get-in config [:ok :producer-config]) (get-in config [:ok :common :producer-topic]))
+      (do
+        (log/info "producer-test")
+        (log/info (test-producer (get-in config [:ok :producer-config]) (get-in config [:ok :common :producer-topic]))))
       ;default
         (do
           (log/error "Missing arugments")
-          (exit 1)))))
+          (exit 1))))
+        )
+
 
 ;; END

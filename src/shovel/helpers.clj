@@ -38,6 +38,19 @@
 ;int
 
 ;ext
+;;is this a good idea?
+(defmacro defnx
+  [name args body]
+  `(def ~name
+    (fn ~args
+      (try ~body
+        (catch Exception e# { :error "Exception"
+                              :fn (str
+                                    (:ns (meta (var ~name)))
+                                    "/"
+                                    (:name (meta (var ~name))))
+                              :file (:file (meta (var ~name)))
+                              :exception (.getMessage e#) })))))
 
 (defmulti hashmap-to-properties identity)
 
@@ -102,7 +115,8 @@
 
 (defn exit [n]
   (log/info "init :: stop")
-  (System/exit n))
+  (System/exit n)
+  true)
 
 (defn config-ok [config]
   (log/info "config [ok]")

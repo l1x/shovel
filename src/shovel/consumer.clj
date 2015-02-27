@@ -12,45 +12,24 @@
 ;;See the License for the specific language governing permissions and
 ;;limitations under the License.
 (ns 
-  ^{:doc "
-
-  This namespace contains the high level consumer code
-
-  More about high level consumers from the Kafka wiki:
-
-  Why use the High Level Consumer
-
-  Sometimes the logic to read messages from Kafka doesn't care about 
-  handling the message offsets, it just wants the data. So the High Level 
-  Consumer is provided to abstract most of the details of consuming events 
-  from Kafka. First thing to know is that the High Level Consumer stores the 
-  last offset read from a specific partition in ZooKeeper. This offset is stored 
-  based on the name provided to Kafka when the process starts. This name is 
-  referred to as the Consumer Group. The Consumer Group name is global across a 
-  Kafka cluster, so you should be careful that any 'old' logic Consumers be 
-  shutdown before starting new code. When a new process is started with the 
-  same Consumer Group name, Kafka will add that processes' threads to the set of 
-  threads available to consume the Topic and trigger a 're-balance'. During this 
-  re-balance Kafka will assign available partitions to available threads, possibly 
-  moving a partition to another process. If you have a mixture of old and new 
-  business logic, it is possible that some messages go to the old logic.
-
-  https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example"}
+  ^{:doc "This namespace contains the consumer code."}
   ;ns
   shovel.consumer
   (:require
     ;internal
-    [shovel.helpers :refer [hashmap-to-properties uuid]]
+    [shovel.helpers :refer :all       ]
     ;external
-    [clojure.tools.logging  :as log                         ]
+    [clojure.core.async     :as async ]
+    [clojure.tools.logging  :as log   ]
     )
   (:import
     [clojure.lang           PersistentHashMap PersistentArrayMap 
-                            PersistentVector                    ]
-    [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
-    [kafka.javaapi.consumer ConsumerConnector                   ]
-    [kafka.message          MessageAndMetadata                  ]
-    [java.util              ArrayList Properties                ])
+                            PersistentVector                      ]
+    [kafka.consumer         ConsumerConfig Consumer 
+                            ConsumerIterator KafkaStream          ]
+    [kafka.javaapi.consumer ConsumerConnector                     ]
+    [kafka.message          MessageAndMetadata                    ]
+    [java.util              HashMap ArrayList Properties          ])
   (:gen-class))
 
 ; internal 
@@ -79,17 +58,47 @@
 (defn message-streams
   "returning the message-streams with a certain topic and thread-pool-size
   message-streams can be processed in threads with simple blocking on empty queue"
-  ^ArrayList [^ConsumerConnector consumer ^String topic ^Integer thread-pool-size]
-  (log/info "fn: message-streams params: " consumer topic thread-pool-size)
-  (.get (.createMessageStreams consumer {topic thread-pool-size}) topic))
+  ^ArrayList [^ConsumerConnector consumer-conn ^String topic ^Integer number-of-streams]
+  (let [  ^HashMap    message-streamz         (.createMessageStreams consumer-conn {topic number-of-streams})
+          ^ArrayList  topic-message-streamz   (.get message-streamz topic) ]
+    topic-message-streamz))
+
+(defn lazy-messages
+  [^ConsumerIterator iterator]
+  (repeatedly #(.next iterator)))
+
+(defn lazy-channels
+  ""
+  [channels]
+  (lazy-seq
+    (cons (let [ [v _] (async/alts!! channels) ] v) (lazy-channels channels))))
+
+(def work-chan (async/chan 32))
+
+; I still haven't found the best solution to deal with KafkaStreams so
+; for now it will be a channel based stuff.
+; the problem is to turn a set of streams into a lazy-seq so that we
+; have from each channel the most (or almost) up to date data
+; [stream stream stream ..... stream]
+; =>
+; (message-from-first-stream message-from-second-stream message-from-third-stream ..... message-from-nth-stream ...
+; message-from-first-stream......message-from-nth-stream.....)
+;
+
+(defn message-loops
+  ""
+  [^ArrayList streams]
+  (log/info "=========> #streams:" (count streams))
+  (doseq [ ^KafkaStream stream streams ]
+    (async/thread
+      (let [ lazy-messagez (lazy-messages (.iterator stream)) ]
+        (async/go-loop [[message-and-metadata & rest-of-the-stream] lazy-messagez]
+          (async/>!! work-chan (message-to-vec message-and-metadata))
+          (recur rest-of-the-stream))))))
 
 (defn messages
-  "returning a lazy-seq of streams each has a lazy-seq of messages"
-  [^ArrayList streams] 
-  (for [  ^KafkaStream        stream  streams 
-          ^MessageAndMetadata message stream  ] 
-      ;return
-      (do
-        (log/debug message stream)
-        (message-to-vec message))))
-
+  ""
+  [^ArrayList streams]
+  (do
+    (message-loops streams)
+    (lazy-channels [work-chan])))
