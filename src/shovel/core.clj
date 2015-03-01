@@ -29,7 +29,10 @@
     [java.io                File                                ]
     [java.util              ArrayList                           ]
     [java.util.concurrent   ThreadPoolExecutor$DiscardPolicy    ]
-    [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
+    [clojure.lang           PersistentHashMap PersistentArrayMap
+                            PersistentVector                    ]
+    [kafka.consumer         ConsumerConfig Consumer
+                            KafkaStream ConsumerIterator ]
     [kafka.javaapi.consumer ConsumerConnector                   ]
     [kafka.message          MessageAndMetadata                  ])
   (:gen-class))
@@ -50,15 +53,18 @@
 
 (log/info (Thread/setDefaultUncaughtExceptionHandler handler))
 
+(defn main-loop [stat-chan]
+  (while true
+    (async/<!!
+      (async/go
+        (let [[result source] (async/alts! [stat-chan (async/timeout 10000)])]
+          (if (= source stat-chan)
+            (log/info "main-loop: " result)
+                ;else - timeout
+              (do
+                (log/info "Channel timed out. Stopping...")
+                (exit 0))))))))
 
-
-  ;;this isn't really helpful to measure how many bytes we are sending 
-  ;;but probably worth to try to correlate with other better measurements
-  (defn total-memory [obj]
-    (let [baos (java.io.ByteArrayOutputStream.)]
-      (with-open [oos (java.io.ObjectOutputStream. baos)]
-        (.writeObject oos obj))
-      (count (.toByteArray baos))))
 ;;
 ;; OPS
 
@@ -76,84 +82,94 @@
 
 (defn test-producer
   [config topic]
-  (log/debug "fn: test-producer params: " config topic)
-  (let [producer-connection-hm (safe-producer-connector config) counter (atom 0)]
-    (cond 
-      (contains? producer-connection-hm :ok) 
-        (def producer-connection (:ok producer-connection-hm)) 
-    :else 
-      (do 
-        (log/error "Cannot connect....")
-        (exit 1)))
-
-    (log/info producer-connection)
-    (doseq [n (range 1000000)]
-      (do
-        (log/debug "n: " n)
-        ;send the message
-        (let [message (sh-producer/message topic "asd" (str "{this is my message : " n "}"))] 
-          (inc! bytes-written (total-memory message))
-          (log/debug 
-            "fn:safe-producer-produce : " producer-connection 
-            "message: " message 
-            "produce:" (safe-producer-produce producer-connection message)))
-        ;mark the meter
-        (mark! messages-written)
-        ;if the counter is 10000 reset the counter and log the metrics
-        (cond 
-          (= @counter 10000) ;if
-          (do 
-            (reset! counter 0) ;not sure if thread safe
-            (log/info (rates messages-written) (value bytes-written))) 
-        :else 
-          (do 
-            (log/debug @counter) 
-            (swap! counter inc)));end cond
-        )))
-  {:ok :ok})
-
-(defn test-consumer 
-  [config] 
-  (log/info "fn: new-consumer-messages params: " config)
+  (log/info "fn: test-producer params: " config topic)
   (let [stat-chan (async/chan 8)]
-    (dotimes [i 1]
-    (async/thread
-      (let [  consumer-config     (get-in config [:ok :consumer-config]) 
-              consumer-topic      (get-in config [:ok :common :consumer-topic])
-              consumer-connector  (sh-consumer/consumer-connector consumer-config)
-              message-streams     (sh-consumer/message-streams consumer-connector consumer-topic (int 1))
-              messages            (sh-consumer/messages message-streams)
-              counter             (atom 0)
-              message-counter     (atom 0)        ]
+    (dotimes [i 4]
+      ;create i threads
+      (async/thread
+        (log/info "SZOPKI!!!!!")
+        ;each thread has its own kafka connector,
 
-        (loop [[message & stream-rest] messages] 
-          (do 
-            (swap! message-counter inc)
-            (log/debug "message counter: " @message-counter)
-            (mark! messages-read)
-            (inc! bytes-read (total-memory message))
-            (cond (= @counter 10000) 
+    (let [  producer-connection-hm  (safe-producer-connector config) 
+            counter                 (atom 0)                          ]
+
+      ;if producer connection is successful
+      (cond 
+        (contains? producer-connection-hm :ok) 
+          (do
+            (log/info producer-connection-hm)
+            (def producer-connection (:ok producer-connection-hm))) 
+      :else 
+        (do 
+          (log/error "Cannot connect....")
+          (exit 1)))
+
+      ;produce N messages and stop
+      (log/info producer-connection)
+      (doseq [n (range 100)]
+        (do
+          (log/info "n: " n)
+          ;send the message
+          (let [message (sh-producer/message topic "asd" (str "{this is my message : " n "}"))
+                return (safe-producer-produce producer-connection message)
+                ] 
+            (log/info 
+              "fn:safe-producer-produce : " producer-connection 
+              "message: " message 
+              "produce:" return)
+            ;mark the meter
+            (mark! messages-written)
+            ;if the counter is 10000 reset the counter and log the metrics
+            (cond 
+              (= @counter 10) ;if
               (do 
-                (reset! counter 0) 
-                (log/debug (rates messages-read))
-                (async/>!! stat-chan {:rates (rates messages-read) :percentiles (value bytes-read) } )) 
+                (reset! counter 0) ;not sure if thread safe
+                (log/info (rates messages-written) message return)) 
             :else 
               (do 
                 (log/debug @counter) 
-                (swap! counter inc)))
-            (log/debug message @counter stat-chan))
-        (recur stream-rest)))))
-    
-    (while true 
-      (async/<!!
-        (async/go
-          (let [[result source] (async/alts! [stat-chan (async/timeout 10000)])]
-            (if (= source stat-chan)
-              (log/info "main-loop: " result)
-                ;else - timeout 
-                (do 
-                  (log/info "Channel timed out. Stopping...") 
-                  (exit 0)))))))))
+                (swap! counter inc)));end cond
+            ))))
+  {:ok :ok}))))
+
+(defn test-consumer
+  [config]
+  (log/info "fn: new-consumer-messages params: " config)
+  (let [stat-chan (async/chan 8)]
+    (dotimes [i 4]
+      ;create i threads
+      (async/thread
+        ;each thread has its own kafka connector,
+        (let [  ^PersistentArrayMap consumer-config     (get-in config [:ok :consumer-config])
+                ^String             consumer-topic      (get-in config [:ok :common :consumer-topic])
+                                    consumer-connector  (sh-consumer/consumer-connector consumer-config)
+                ^ArrayList          message-streams     (sh-consumer/message-streams consumer-connector consumer-topic (int 1))
+                                    counter             (atom 0)
+                                    message-counter     (atom 0)                                                                  ]
+
+          (log/info "=========> #streams:" (count message-streams))
+          (doseq [ ^KafkaStream stream message-streams ]
+            (async/thread
+              (let [ iterator (.iterator stream) ]
+                (while (.hasNext iterator)
+                  (let [message (sh-consumer/message-to-vec (.next iterator))]
+                    (do
+                      (swap! message-counter inc)
+                      (log/debug "message counter: " @message-counter)
+                      (log/debug ".hasNext")
+                      (mark! messages-read)
+                      (inc! bytes-read 1)
+                      (cond (= @counter 100000)
+                        (do
+                          (reset! counter 0)
+                          (log/debug (rates messages-read))
+                          (async/>!! stat-chan {:rates (rates messages-read) :percentiles (value bytes-read) } ))
+                      :else
+                        (do
+                          (log/debug @counter)
+                          (swap! counter inc)))
+                      (log/debug message @counter stat-chan))))))))))
+(main-loop stat-chan)))
             
 ;; CLI
 

@@ -5,14 +5,14 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.
 
 ## Releases and Dependency Information
 
-Latest and greatest stable release is 0.1.3:
+Latest and greatest stable release is 0.9.1:
 
-* [0.1.3](https://github.com/l1x/shovel/tree/0.1.3)
+* [0.9.1](https://github.com/l1x/shovel/tree/0.9.1)
 
 Leiningen dependency information:
 
 ```clojure
-[shovel "0.1.3"]
+[shovel "0.9.1"]
 ```
 
 
@@ -67,30 +67,31 @@ zookeeper.connection.timeout.ms=1000000
 Producer:
 
 ```
-lein uberjar && java -jar target/shovel-0.1.1-standalone.jar producer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.9.1-standalone.jar producer-test -f conf/app.edn
 ```
 
 Consumer:
 
 ```
-lein uberjar && java -jar target/shovel-0.1.1-standalone.jar consumer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.9.1-standalone.jar consumer-test -f conf/app.edn
 ```
 ## CLOC
 
 ```
-      23 text files.
-      22 unique files.
-      15 files ignored.
+      29 text files.
+      28 unique files.
+      19 files ignored.
 
-http://cloc.sourceforge.net v 1.62  T=3.25 s (2.8 files/s, 300.5 lines/s)
+http://cloc.sourceforge.net v 1.62  T=2.87 s (3.8 files/s, 398.7 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Clojure                          7             64             98            330
-Maven                            1              1              4            293
-HTML                             1             38              0            150
+Clojure                          6             70             98            408
+Maven                            1              1              4            347
+HTML                             1             38              0            149
+Bourne Shell                     3              2              0             28
 -------------------------------------------------------------------------------
-SUM:                             9            103            102            773
+SUM:                            11            111            102            932
 -------------------------------------------------------------------------------
 ```
 

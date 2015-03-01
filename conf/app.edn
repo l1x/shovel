@@ -5,7 +5,7 @@
   } 
 
   :consumer-config {  
-    :zookeeper.connect                "localhost:2181"
+    :zookeeper.connect                "127.0.0.1:2181"
     :group.id                         "shovel-test-0"
     :auto.offset.reset                "smallest"
     :auto.commit.enable               "true" 
@@ -20,7 +20,7 @@
   }
 
   :producer-config {  
-    :metadata.broker.list           "localhost:9092"
+    :metadata.broker.list           "127.0.0.1:9092"
     :serializer.class               "kafka.serializer.StringEncoder"
     :request.required.acks          "1"
   }
