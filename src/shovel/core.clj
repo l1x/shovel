@@ -162,7 +162,6 @@
                       (cond (= @counter 100000)
                         (do
                           (reset! counter 0)
-                          (log/debug (rates messages-read))
                           (async/>!! stat-chan {:rates (rates messages-read) :percentiles (value bytes-read) } ))
                       :else
                         (do

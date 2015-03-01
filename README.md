@@ -20,9 +20,21 @@ Leiningen dependency information:
 
 #### Producing
 
-
-
 #### Consuming
+
+First I thought there can a lazy sequence created and returned, that would be a nice way of dealing with Kafka streams in Clojure. For functions with side effects the idiomatic way is to use repeatedly.
+
+```Clojure
+(defn lazy-messages
+  [^ConsumerIterator iterator]
+  (repeatedly #(.next iterator)))
+```
+
+[https://clojuredocs.org/clojure.core/repeatedly](https://clojuredocs.org/clojure.core/repeatedly)
+
+Unfortunately the code hold onto the head and the heap exploded. I went for the recommended way of using the Kafka library.
+
+
 
 ## Usage
 
