@@ -1,4 +1,4 @@
- Shovel
+# Shovel
 
 A simple Clojure library for processing Kafka streams using core.async. It has a simple (high level) consumer
 and a simple producer. Works with the Kafka 0.8.1 or newer.
@@ -14,7 +14,15 @@ Leiningen dependency information:
 ```clojure
 [shovel "0.9.1"]
 ```
+## Internals
 
+### Talking to Kafka
+
+#### Producing
+
+
+
+#### Consuming
 
 ## Usage
 
