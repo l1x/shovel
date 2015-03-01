@@ -6,17 +6,25 @@
 
   :consumer-config {  
     :zookeeper.connect                "127.0.0.1:2181"
+    :zookeeper.session.timeout.ms     "6000"
+    :zookeeper.connection.timeout.ms  "6000"
+    :zookeeper.sync.time.ms           "2000"
     :group.id                         "shovel-test-0"
     :auto.offset.reset                "smallest"
     :auto.commit.enable               "true" 
     :request.required.acks            "1" 
     :controlled.shutdown.max.retries  "3"
-
-; 0, which means that the producer never waits for an acknowledgement from the broker (the same behavior as 0.7). This option provides the lowest latency but the weakest durability guarantees (some data will be lost when a server fails).
-; 1, which means that the producer gets an acknowledgement after the leader replica has received the data. This option provides better durability as the client waits until the server acknowledges the request as successful (only messages that were written to the now-dead leader but not yet replicated will be lost).
-; -1, which means that the producer gets an acknowledgement after all in-sync replicas have received the data. This option provides the best durability, we guarantee that no messages will be lost as long as at least one in sync replica remains.
-
-
+    :socket.timeout.ms                "30000"   ; 30 * 1000
+    :socket.receive.buffer.bytes      "65536"   ; 64 * 1024
+    :fetch.message.max.bytes          "1048576" ;1024 * 1024
+    :auto.commit.interval.ms          "2000"    ;2 * 1000
+    :queued.max.message.chunks        "10"
+    :rebalance.max.retries            "4"
+    :fetch.min.bytes                  "1"
+    :fetch.wait.max.ms                "100"
+    :rebalance.backoff.ms             "2000"
+    :refresh.leader.backoff.ms        "200"
+    :consumer.timeout.ms              "-1"
   }
 
   :producer-config {  

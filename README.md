@@ -34,6 +34,14 @@ First I thought there can a lazy sequence created and returned, that would be a 
 
 Unfortunately the code hold onto the head and the heap exploded. I went for the recommended way of using the Kafka library.
 
+```Clojure
+          (doseq [ ^KafkaStream stream message-streams ]
+            (async/thread
+              (let [ ^ConsumerIterator iterator (.iterator stream) ]
+                (while (.hasNext iterator)
+                  (let [message (sh-consumer/message-to-vec (.next iterator))]
+                    ...
+```
 
 
 ## Usage

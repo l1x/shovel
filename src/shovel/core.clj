@@ -41,17 +41,11 @@
 (def reg (new-registry))
 (defmeter     reg messages-read)
 (defmeter     reg messages-written)
-(defcounter   reg bytes-read)
-(defcounter   reg bytes-written)
+;(defcounter   reg bytes-read)
+;(defcounter   reg bytes-written)
 
 
 ;; Helpers
-
-(def handler (proxy [Thread$UncaughtExceptionHandler] [] 
-  (uncaughtException [thread exception]
-    (log/error thread exception))))
-
-(log/info (Thread/setDefaultUncaughtExceptionHandler handler))
 
 (defn main-loop [stat-chan]
   (while true
@@ -63,113 +57,79 @@
                 ;else - timeout
               (do
                 (log/info "Channel timed out. Stopping...")
+                ;(.shutdown connector)
                 (exit 0))))))))
 
-;;
-;; OPS
-
-(defnx safe-producer-connector [config] 
-  (do 
-    (let [return {:ok (sh-producer/producer-connector config)}]
-      (log/debug "fn:safe-producer-connector return: " return)
-      return)))
-
-(defnx safe-producer-produce [producer-connection message]
-  (do
-    (let [return {:ok (sh-producer/produce producer-connection  message)}]
-      (log/debug "fn:safe-producer-produce return: " return)
-      return)))
+;; PRODUCER
 
 (defn test-producer
-  [config topic]
-  (log/info "fn: test-producer params: " config topic)
+  [config]
+  (log/info "fn: test-producer params: " config)
   (let [stat-chan (async/chan 8)]
-    (dotimes [i 4]
+    (dotimes [i 8]
       ;create i threads
       (async/thread
-        (log/info "SZOPKI!!!!!")
-        ;each thread has its own kafka connector,
+        (let [  ^PersistentArrayMap producer-config     (get-in config [:ok :producer-config])
+                ^String             producer-topic      (get-in config [:ok :common :producer-topic]) 
+                ^Producer           producer-connector  (sh-producer/producer-connector producer-config)
+                                    counter             (atom 0)
+                                    message-counter     (atom 0) ]
+         (log/info "Producer starting up: " producer-connector)
+         (doseq [n (range 1000000)]
+           (let [  message (sh-producer/message producer-topic (str "{this is my message : " n "}"))
+                   return  (sh-producer/produce producer-connector message)    ]
+           (do
+             (swap! message-counter inc)
+             (log/debug "message counter: " @message-counter)
+             (mark! messages-written)
+             (cond (= @counter 10000)
+               (do
+                 (reset! counter 0)
+                 (async/>!! stat-chan {:rates (rates messages-written) :connector producer-connector } ))
+             :else
+               (do
+                 (log/debug @counter)
+                 (swap! counter inc)))))))))
+    ;this is the event loop
+    (main-loop stat-chan)))
 
-    (let [  producer-connection-hm  (safe-producer-connector config) 
-            counter                 (atom 0)                          ]
-
-      ;if producer connection is successful
-      (cond 
-        (contains? producer-connection-hm :ok) 
-          (do
-            (log/info producer-connection-hm)
-            (def producer-connection (:ok producer-connection-hm))) 
-      :else 
-        (do 
-          (log/error "Cannot connect....")
-          (exit 1)))
-
-      ;produce N messages and stop
-      (log/info producer-connection)
-      (doseq [n (range 100)]
-        (do
-          (log/info "n: " n)
-          ;send the message
-          (let [message (sh-producer/message topic "asd" (str "{this is my message : " n "}"))
-                return (safe-producer-produce producer-connection message)
-                ] 
-            (log/info 
-              "fn:safe-producer-produce : " producer-connection 
-              "message: " message 
-              "produce:" return)
-            ;mark the meter
-            (mark! messages-written)
-            ;if the counter is 10000 reset the counter and log the metrics
-            (cond 
-              (= @counter 10) ;if
-              (do 
-                (reset! counter 0) ;not sure if thread safe
-                (log/info (rates messages-written) message return)) 
-            :else 
-              (do 
-                (log/debug @counter) 
-                (swap! counter inc)));end cond
-            ))))
-  {:ok :ok}))))
+;; CONSUMER
 
 (defn test-consumer
   [config]
-  (log/info "fn: new-consumer-messages params: " config)
+  (log/info "fn: test-consumer params: " config)
   (let [stat-chan (async/chan 8)]
     (dotimes [i 4]
       ;create i threads
       (async/thread
-        ;each thread has its own kafka connector,
+        ;each thread has its own kafka connector, that has to shut down properly before exit
         (let [  ^PersistentArrayMap consumer-config     (get-in config [:ok :consumer-config])
                 ^String             consumer-topic      (get-in config [:ok :common :consumer-topic])
                                     consumer-connector  (sh-consumer/consumer-connector consumer-config)
                 ^ArrayList          message-streams     (sh-consumer/message-streams consumer-connector consumer-topic (int 1))
                                     counter             (atom 0)
                                     message-counter     (atom 0)                                                                  ]
-
           (log/info "=========> #streams:" (count message-streams))
           (doseq [ ^KafkaStream stream message-streams ]
             (async/thread
-              (let [ iterator (.iterator stream) ]
+              (let [ ^ConsumerIterator iterator (.iterator stream) ]
                 (while (.hasNext iterator)
                   (let [message (sh-consumer/message-to-vec (.next iterator))]
                     (do
                       (swap! message-counter inc)
                       (log/debug "message counter: " @message-counter)
-                      (log/debug ".hasNext")
                       (mark! messages-read)
-                      (inc! bytes-read 1)
                       (cond (= @counter 100000)
                         (do
                           (reset! counter 0)
-                          (async/>!! stat-chan {:rates (rates messages-read) :percentiles (value bytes-read) } ))
+                          (async/>!! stat-chan {:rates (rates messages-read) :connector consumer-connector } ))
                       :else
                         (do
-                          (log/debug @counter)
                           (swap! counter inc)))
                       (log/debug message @counter stat-chan))))))))))
-(main-loop stat-chan)))
-            
+  ;this is the event loop
+  (main-loop stat-chan)))
+
 ;; CLI
 
 (def cli-options
@@ -192,23 +152,16 @@
       :else
         ;; exit 1 here
         (config-err config))
-
-
     ; Execute program with options
     (case (first arguments)
       "print-config"
-        (println config)
+        (log/info config)
       "consumer-test"
         (test-consumer config)
       "producer-test"
-      (do
-        (log/info "producer-test")
-        (log/info (test-producer (get-in config [:ok :producer-config]) (get-in config [:ok :common :producer-topic]))))
+        (test-producer config)
       ;default
         (do
           (log/error "Missing arugments")
-          (exit 1))))
-        )
-
-
+          (exit 1)))))
 ;; END
