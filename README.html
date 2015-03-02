@@ -52,15 +52,55 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 <h2>
 <a id="user-content-releases-and-dependency-information" class="anchor" href="#releases-and-dependency-information" aria-hidden="true"><span class="octicon octicon-link"></span></a>Releases and Dependency Information</h2>
 
-<p>Latest and greatest stable release is 0.0.4:</p>
+<p>Latest and greatest stable release is 0.9.1:</p>
 
 <ul>
-<li><a href="https://github.com/l1x/shovel/tree/0.1.1">0.1.1</a></li>
+<li><a href="https://github.com/l1x/shovel/tree/0.9.1">0.9.1</a></li>
 </ul>
 
 <p>Leiningen dependency information:</p>
 
-<div class="highlight highlight-clojure"><pre>[shovel <span class="pl-s1"><span class="pl-pds">"</span>0.1.1<span class="pl-pds">"</span></span>]</pre></div>
+<div class="highlight highlight-clojure"><pre>[shovel <span class="pl-s1"><span class="pl-pds">"</span>0.9.1<span class="pl-pds">"</span></span>]</pre></div>
+
+<h2>
+<a id="user-content-internals" class="anchor" href="#internals" aria-hidden="true"><span class="octicon octicon-link"></span></a>Internals</h2>
+
+<h3>
+<a id="user-content-talking-to-kafka" class="anchor" href="#talking-to-kafka" aria-hidden="true"><span class="octicon octicon-link"></span></a>Talking to Kafka</h3>
+
+<h4>
+<a id="user-content-producing" class="anchor" href="#producing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Producing</h4>
+
+<p>This is the first attempt to have something remotely safe and simple, the reality is that you cannot catch those exceptions this way which are generated during send. I need to investigate how to reliably deliver messages with Kafka and return error on unsuccessful send.</p>
+
+<div class="highlight highlight-Clojure"><pre>(<span class="pl-k">defn</span> <span class="pl-e">produce</span>
+  [^Producer producer ^KeyedMessage message]
+  (log/debug <span class="pl-s1"><span class="pl-pds">"</span>fn: produce params: <span class="pl-pds">"</span></span> producer message)
+  (<span class="pl-s">try</span>
+    {<span class="pl-c1">:ok</span> (.send producer message)}
+  (<span class="pl-s">catch</span> Exception e
+    { <span class="pl-c1">:error</span> <span class="pl-s1"><span class="pl-pds">"</span>Exception<span class="pl-pds">"</span></span> <span class="pl-c1">:fn</span> <span class="pl-s1"><span class="pl-pds">"</span>produce<span class="pl-pds">"</span></span> <span class="pl-c1">:exception</span> (.getMessage e) <span class="pl-c1">:e</span> e})))</pre></div>
+
+<h4>
+<a id="user-content-consuming" class="anchor" href="#consuming" aria-hidden="true"><span class="octicon octicon-link"></span></a>Consuming</h4>
+
+<p>First I thought there can a lazy sequence created and returned, that would be a nice way of dealing with Kafka streams in Clojure. For functions with side effects the idiomatic way is to use repeatedly.</p>
+
+<div class="highlight highlight-Clojure"><pre>(<span class="pl-k">defn</span> <span class="pl-e">lazy-messages</span>
+  [^ConsumerIterator iterator]
+  (repeatedly #(.next iterator)))</pre></div>
+
+<p><a href="https://clojuredocs.org/clojure.core/repeatedly">https://clojuredocs.org/clojure.core/repeatedly</a></p>
+
+<p>Unfortunately the code hold onto the head and the heap exploded. I went for the recommended way of using the Kafka library.</p>
+
+<div class="highlight highlight-Clojure"><pre>          ...
+          (doseq [ ^KafkaStream stream message-streams ]
+            (async/thread
+              (<span class="pl-s">let</span> [ ^ConsumerIterator iterator (.iterator stream) ]
+                (while (.hasNext iterator)
+                  (<span class="pl-s">let</span> [message (sh-consumer/message-to-vec (.next iterator))]
+                    ...</pre></div>
 
 <h2>
 <a id="user-content-usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
@@ -70,7 +110,20 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 <p><a href="https://archive.apache.org/dist/kafka/0.8.2.0/RELEASE_NOTES.html">0.8.2.0 Release Notes</a></p>
 
 <h3>
-<a id="user-content-download-kafka-and-set-up-the-dev-environment" class="anchor" href="#download-kafka-and-set-up-the-dev-environment" aria-hidden="true"><span class="octicon octicon-link"></span></a>Download Kafka and set up the dev environment</h3>
+<a id="user-content-setting-up-dev-env-the-docker-way" class="anchor" href="#setting-up-dev-env-the-docker-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting up dev env, the Docker way</h3>
+
+<div class="highlight highlight-Bash"><pre>docker pull istvan/zookeeper:latest
+docker pull istvan/kafka:0.8.2.0
+docker pull istvan/shovel:0.9.1
+
+docker run --name zookeeper -d -p 127.0.0.1:2181:2181 istvan/zookeeper:latest
+docker run --name kafka --link zookeeper:zookeeper  -d -p 127.0.0.1:9092:9092 istvan/kafka:0.8.2.0
+docker run istvan/shovel:0.9.1</pre></div>
+
+<h3>
+<a id="user-content-setting-up-dev-env-the-painful-way" class="anchor" href="#setting-up-dev-env-the-painful-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting up dev env, the painful way</h3>
+
+<p>Download and extract the Kafka package and make sure Java is installed.</p>
 
 <h4>
 <a id="user-content-start-zookeeper" class="anchor" href="#start-zookeeper" aria-hidden="true"><span class="octicon octicon-link"></span></a>Start Zookeeper</h4>
@@ -80,8 +133,15 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 <p>Props:</p>
 
 <pre><code>dataDir=/tmp/zookeeper
+#dataDir=/mnt/md0/zk_data
 clientPort=2181
 maxClientCnxns=0
+tickTime=2000
+# initLimit=5
+# syncLimit=2
+# server.0=ec2-54-190-155-190.us-west-2.compute.amazonaws.com:2888:3888
+# server.1=ec2-54-184-5-145.us-west-2.compute.amazonaws.com:2888:3888
+# server.2=ec2-54-189-164-10.us-west-2.compute.amazonaws.com:2888:3888
 </code></pre>
 
 <h4>
@@ -93,18 +153,20 @@ maxClientCnxns=0
 
 <pre><code>broker.id=0
 port=9092
-num.network.threads=2 
+num.network.threads=3
 num.io.threads=8
-socket.send.buffer.bytes=1048576
-socket.receive.buffer.bytes=1048576
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
 socket.request.max.bytes=104857600
-log.dirs=/tmp/kafka-logsnum.partitions=2
-log.retention.hours=168
-log.segment.bytes=536870912
-log.retention.check.interval.ms=60000
-log.cleaner.enable=false
-zookeeper.connect=localhost:2181
-zookeeper.connection.timeout.ms=1000000
+log.dirs=/tmp/kafka-logs
+num.partitions=16
+num.recovery.threads.per.data.dir=1
+log.retention.hours=4
+log.segment.bytes=1073741824
+log.retention.check.interval.ms=300000
+log.cleaner.enable=true
+zookeeper.connect=zookeeper:2181
+zookeeper.connection.timeout.ms=6000
 </code></pre>
 
 <h4>
@@ -112,30 +174,31 @@ zookeeper.connection.timeout.ms=1000000
 
 <p>Producer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.1.1-standalone.jar producer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.9.1-standalone.jar producer-test -f conf/app.edn
 </code></pre>
 
 <p>Consumer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.1.1-standalone.jar consumer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.9.1-standalone.jar consumer-test -f conf/app.edn
 </code></pre>
 
 <h2>
 <a id="user-content-cloc" class="anchor" href="#cloc" aria-hidden="true"><span class="octicon octicon-link"></span></a>CLOC</h2>
 
-<pre><code>      23 text files.
-      22 unique files.
-      15 files ignored.
+<pre><code>      29 text files.
+      29 unique files.
+      19 files ignored.
 
-http://cloc.sourceforge.net v 1.62  T=3.25 s (2.8 files/s, 300.5 lines/s)
+http://cloc.sourceforge.net v 1.62  T=2.44 s (4.5 files/s, 436.4 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Clojure                          7             64             98            330
-Maven                            1              1              4            293
+Clojure                          6             53             88            351
+Maven                            1              1              4            347
 HTML                             1             38              0            150
+Bourne Shell                     3              2              0             30
 -------------------------------------------------------------------------------
-SUM:                             9            103            102            773
+SUM:                            11             94             92            878
 -------------------------------------------------------------------------------
 </code></pre>
 

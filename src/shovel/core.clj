@@ -14,121 +14,128 @@
 (ns shovel.core
   (:require
     ;internal
-    [shovel.consumer        :as     sh-consumer                 ]
-    [shovel.producer        :as     sh-producer                 ]
-    [shovel.helpers         :refer   :all                       ]
+    [shovel.consumer        :as     sh-consumer                         ]
+    [shovel.producer        :as     sh-producer                         ]
+    [shovel.helpers         :refer   :all                               ]
     ;external
-    [clojure.tools.logging  :as     log                         ]
-    [metrics.meters         :refer  [defmeter mark! rates]      ]
-    [metrics.core           :refer  [new-registry]              ]
+    [clojure.tools.logging  :as     log                                 ]
+    [metrics.meters         :refer  [defmeter mark! rates]              ]
+    [metrics.histograms     :refer  [defhistogram update! percentiles]  ]
+    [metrics.counters       :refer  [defcounter inc! value]             ]
+    [metrics.core           :refer  [new-registry]                      ]
     [clojure.core.async     :as     async         ]
     [clojure.tools.cli      :refer  [parse-opts]  ])
   (:import 
     [java.io                File                                ]
     [java.util              ArrayList                           ]
-    [kafka.consumer         ConsumerConfig Consumer KafkaStream ]
+    [java.util.concurrent   ThreadPoolExecutor$DiscardPolicy    ]
+    [clojure.lang           PersistentHashMap PersistentArrayMap
+                            PersistentVector                    ]
+    [kafka.consumer         ConsumerConfig Consumer
+                            KafkaStream ConsumerIterator ]
     [kafka.javaapi.consumer ConsumerConnector                   ]
     [kafka.message          MessageAndMetadata                  ])
   (:gen-class))
 
 ;; metrics 
 (def reg (new-registry))
-(defmeter reg messages-read)
-(defmeter reg messages-written)
+(defmeter     reg messages-read)
+(defmeter     reg messages-written)
+;(defcounter   reg bytes-read)
+;(defcounter   reg bytes-written)
+
 
 ;; Helpers
-;;
-(defn default-iterator
-  "processing all streams in a thread and printing the message field for each message"
-  [^ArrayList streams]
-  (let [c (async/chan)]
-    ;; create a thread for each stream
-    (doseq
-      [^KafkaStream stream streams]
-      (let [uuid (uuid)]
-        (async/thread
-          (async/>!! c
-            (doseq
-              [^MessageAndMetadata message stream]
-              (sh-consumer/message-to-vec message))))))
-    ;; read the channel forever
-    (while true
-      (async/<!! c))))
 
-;; OPS
+(defn main-loop [stat-chan timeout]
+  (while true
+    (async/<!!
+      (async/go
+        (let [[result source] (async/alts! [stat-chan (async/timeout 10000)])]
+          (if (= source stat-chan)
+            (log/info "main-loop: " result)
+                ;else - timeout
+              (do
+                (log/info "Channel timed out after " timeout " ms. Stopping...")
+                ;(.shutdown connector)
+                (exit 0))))))))
+
+;; PRODUCER
 
 (defn test-producer
-  [config topic]
+  [config]
   (log/info "fn: test-producer params: " config)
-  (let [producer-connection (sh-producer/producer-connector config) counter (atom 0)]
-    (doseq [n (range 100)]
-      (do
-        (log/debug n)
-        (cond 
-          (= @counter 10) 
-          (do 
-            (reset! counter 0) 
-            (log/info (rates messages-written))) 
-          :else 
-          (do 
-            (log/debug @counter) 
-            (swap! counter inc)));end cond
-        (mark! messages-written)
-        (sh-producer/produce
-          producer-connection
-          (sh-producer/message topic "asd" (str "this is my message" n))))))
-  
-  (log/info {:ok :ok}))
+  (let [                      stat-chan           (async/chan 8)
+          ^Long               main-loop-timeout   (get-in config [:ok :shovel-producer :main-loop-timeout ]   )
+          ^Long               counter-reset       (get-in config [:ok :shovel-producer :counter-reset     ]   )
+          ^Long               num-of-messages     (get-in config [:ok :shovel-producer :num-of-messages   ]   )
+          ^String             producer-topic      (get-in config [:ok :shovel-producer :topic             ]   ) 
+          ^PersistentArrayMap producer-config     (get-in config [:ok :producer-config                    ]   )   ]
+    (dotimes [i 8]
+      ;create i threads
+      (async/thread
+        (let [ ^Producer  producer-connector  (sh-producer/producer-connector producer-config)
+                          counter             (atom 0)
+                          message-counter     (atom 0) ]
+         (log/info "Producer starting up: " producer-connector)
+         (doseq [n (range num-of-messages)]
+           (let [  message (sh-producer/message producer-topic (str "{this is my message : " n "}"))
+                   return  (sh-producer/produce producer-connector message)    ]
+           (do
+             (swap! message-counter inc)
+             (log/debug "message counter: " @message-counter)
+             (mark! messages-written)
+             (cond (= @counter counter-reset)
+               (do
+                 (reset! counter 0)
+                 (async/>!! stat-chan {:rates (rates messages-written) :connector producer-connector } ))
+             :else
+               (do
+                 (log/debug @counter)
+                 (swap! counter inc)))))))))
+    ;this is the event loop
+    (main-loop stat-chan main-loop-timeout)))
 
-(defn test-consumer 
-  [config] 
-  (log/info "####################fn: new-consumer-messages params: " config)
-  (let [stat-chan (async/chan 8)]
-    (dotimes [i 3]
-    (async/thread
-      (let [  consumer-config (get-in config [:ok :consumer-config]) 
-              consumer-topic  (get-in config [:ok :common :consumer-topic])
-              message-stream  (sh-consumer/messages
-                                (sh-consumer/message-streams 
-                                  (sh-consumer/consumer-connector consumer-config) ;connector
-                                  consumer-topic                                   ;topic
-                                  (int 1)))                                        ;threadpool size, must be 1
-              counter         (atom 0)
-              message-counter (atom 0)]
+;; CONSUMER
 
-        ;limit the amount of memory / thread
-        ;
-        ;(loop [x (range 10)] (print x) (recur (rest x)))
-        ;
-        ;(loop [message message-stream] (println (first x)) (recur (rest x)))
-        (loop [[message & stream-rest] message-stream] 
-          (do 
-            (swap! message-counter inc)
-            (log/debug "message counter: " @message-counter)
-            (mark! messages-read)
-            (cond (= @counter 100000) 
-              (do 
-                (reset! counter 0) 
-                (log/debug (rates messages-read))
-                (async/>!! stat-chan (rates messages-read))) 
-            :else 
-              (do 
-                (log/debug @counter) 
-                (swap! counter inc)))
-            (log/debug message @counter stat-chan))
-        (recur stream-rest)))))
-    
-    (while true 
-      (async/<!!
-        (async/go
-          (let [[result source] (async/alts! [stat-chan (async/timeout 60000)])]
-            (if (= source stat-chan)
-              (log/info "main-loop: " result)
-                ;else - timeout 
-                (do 
-                  (log/info "Channel timed out. Stopping...") 
-                  (exit 0)))))))))
-            
+(defn test-consumer
+  [config]
+  (log/info "fn: test-consumer params: " config)
+  (let [        stat-chan           (async/chan 8)
+        ^Long   main-loop-timeout   (get-in config [:ok :shovel-consumer :main-loop-timeout ]     )
+        ^Long   counter-reset       (get-in config [:ok :shovel-consumer :counter-reset     ]     ) ]
+    (dotimes [i 4]
+      ;create i threads
+      (async/thread
+        ;each thread has its own kafka connector, that has to shut down properly before exit,
+        ;also this needs to move up one layer (let) to save some insignificant amount of memory
+        (let [  ^PersistentArrayMap consumer-config     (get-in config [:ok :consumer-config])
+                ^String             consumer-topic      (get-in config [:ok :shovel-consumer :topic])
+                                    consumer-connector  (sh-consumer/consumer-connector consumer-config)
+                ^ArrayList          message-streams     (sh-consumer/message-streams consumer-connector consumer-topic (int 1))
+                                    counter             (atom 0)
+                                    message-counter     (atom 0)                                                                  ]
+          (log/info "fn: test-consumer #streams:" (count message-streams))
+          (doseq [ ^KafkaStream stream message-streams ]
+            (async/thread
+              (let [ ^ConsumerIterator iterator (.iterator stream) ]
+                (while (.hasNext iterator)
+                  (let [message (sh-consumer/message-to-vec (.next iterator))]
+                    (do
+                      (swap! message-counter inc)
+                      (log/debug "message counter: " @message-counter)
+                      (mark! messages-read)
+                      (cond (= @counter counter-reset)
+                        (do
+                          (reset! counter 0)
+                          (async/>!! stat-chan {:rates (rates messages-read) :connector consumer-connector } ))
+                      :else
+                        (do
+                          (swap! counter inc)))
+                      (log/debug message @counter stat-chan))))))))))
+  ;this is the event loop
+  (main-loop stat-chan main-loop-timeout)))
+
 ;; CLI
 
 (def cli-options
@@ -151,19 +158,16 @@
       :else
         ;; exit 1 here
         (config-err config))
-
-
     ; Execute program with options
     (case (first arguments)
       "print-config"
-        (println config)
+        (log/info config)
       "consumer-test"
         (test-consumer config)
       "producer-test"
-        (test-producer (get-in config [:ok :producer-config]) (get-in config [:ok :common :producer-topic]))
+        (test-producer config)
       ;default
         (do
           (log/error "Missing arugments")
           (exit 1)))))
-
 ;; END

@@ -1,4 +1,4 @@
-(defproject shovel "0.1.2"
+(defproject shovel "0.9.1"
   :description "Simple Kafka consumer and producer using core.async"
   :url "https://clojars.org/shovel"
   :license {:name " Apache License Version 2.0"
@@ -28,14 +28,14 @@
     }
   }
   :jvm-opts [
-    "-Xms256m" "-Xmx512m" "-server"
+    "-Xms256m" "-Xmx1024m" "-server"
     "-XX:NewRatio=2" "-XX:+UseConcMarkSweepGC"
     "-XX:+TieredCompilation" "-XX:+AggressiveOpts"
     "-Dcom.sun.management.jmxremote"
     "-Dcom.sun.management.jmxremote.local.only=false"
     "-Dcom.sun.management.jmxremote.authenticate=false"
     "-Dcom.sun.management.jmxremote.ssl=false"
-    ;"-Xprof" "-Xrunhprof"
+    "-XX:+UnlockCommercialFeatures" "-XX:+FlightRecorder"
   ]
   :repl-options {:init-ns shovel.consumer}
   :main shovel.core)

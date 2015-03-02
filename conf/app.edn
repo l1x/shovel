@@ -1,18 +1,42 @@
 {
-  :common {
-    :consumer-topic "shovel-test-0"
-    :producer-topic "shovel-test-0"
+  :shovel-consumer {
+    :topic                "shovel-test-0"
+    :counter-reset        100
+    :main-loop-timeout    10000
   } 
 
+  :shovel-producer {
+    :topic                "shovel-test-0"
+    :num-of-messages      1000
+    :counter-reset        100
+    :main-loop-timeout    10000
+  }
+
   :consumer-config {  
-    :zookeeper.connect              "localhost:2181"
-    :group.id                       "shovel-test-0"
-    :auto.offset.reset              "largest"
-    :auto.commit.enable             "true" 
+    :zookeeper.connect                "127.0.0.1:2181"
+    :zookeeper.session.timeout.ms     "6000"
+    :zookeeper.connection.timeout.ms  "6000"
+    :zookeeper.sync.time.ms           "2000"
+    :group.id                         "shovel-test-0"
+    :auto.offset.reset                "smallest"
+    :auto.commit.enable               "true" 
+    :request.required.acks            "1" 
+    :controlled.shutdown.max.retries  "3"
+    :socket.timeout.ms                "30000"   ; 30 * 1000
+    :socket.receive.buffer.bytes      "65536"   ; 64 * 1024
+    :fetch.message.max.bytes          "1048576" ;1024 * 1024
+    :auto.commit.interval.ms          "2000"    ;2 * 1000
+    :queued.max.message.chunks        "10"
+    :rebalance.max.retries            "4"
+    :fetch.min.bytes                  "1"
+    :fetch.wait.max.ms                "100"
+    :rebalance.backoff.ms             "2000"
+    :refresh.leader.backoff.ms        "200"
+    :consumer.timeout.ms              "-1"
   }
 
   :producer-config {  
-    :metadata.broker.list           "localhost:9092"
+    :metadata.broker.list           "127.0.0.1:9092"
     :serializer.class               "kafka.serializer.StringEncoder"
     :request.required.acks          "1"
   }
