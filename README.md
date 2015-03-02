@@ -20,6 +20,18 @@ Leiningen dependency information:
 
 #### Producing
 
+This is the first attempt to have something remotely safe and simple, the reality is that you cannot catch those exceptions this way which are generated during send. I need to investigate how to reliably deliver messages with Kafka and return error on unsuccessful send.
+
+```Clojure
+(defn produce
+  [^Producer producer ^KeyedMessage message]
+  (log/debug "fn: produce params: " producer message)
+  (try
+    {:ok (.send producer message)}
+  (catch Exception e
+    { :error "Exception" :fn "produce" :exception (.getMessage e) :e e})))
+```
+
 #### Consuming
 
 First I thought there can a lazy sequence created and returned, that would be a nice way of dealing with Kafka streams in Clojure. For functions with side effects the idiomatic way is to use repeatedly.
@@ -35,6 +47,7 @@ First I thought there can a lazy sequence created and returned, that would be a 
 Unfortunately the code hold onto the head and the heap exploded. I went for the recommended way of using the Kafka library.
 
 ```Clojure
+          ...
           (doseq [ ^KafkaStream stream message-streams ]
             (async/thread
               (let [ ^ConsumerIterator iterator (.iterator stream) ]
@@ -62,8 +75,15 @@ Props:
 
 ```
 dataDir=/tmp/zookeeper
+#dataDir=/mnt/md0/zk_data
 clientPort=2181
 maxClientCnxns=0
+tickTime=2000
+# initLimit=5
+# syncLimit=2
+# server.0=ec2-54-190-155-190.us-west-2.compute.amazonaws.com:2888:3888
+# server.1=ec2-54-184-5-145.us-west-2.compute.amazonaws.com:2888:3888
+# server.2=ec2-54-189-164-10.us-west-2.compute.amazonaws.com:2888:3888
 ```
 
 #### Start Kafka 
@@ -76,18 +96,20 @@ Props:
 ```
 broker.id=0
 port=9092
-num.network.threads=2 
+num.network.threads=3
 num.io.threads=8
-socket.send.buffer.bytes=1048576
-socket.receive.buffer.bytes=1048576
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
 socket.request.max.bytes=104857600
-log.dirs=/tmp/kafka-logsnum.partitions=2
-log.retention.hours=168
-log.segment.bytes=536870912
-log.retention.check.interval.ms=60000
-log.cleaner.enable=false
-zookeeper.connect=localhost:2181
-zookeeper.connection.timeout.ms=1000000
+log.dirs=/tmp/kafka-logs
+num.partitions=16
+num.recovery.threads.per.data.dir=1
+log.retention.hours=4
+log.segment.bytes=1073741824
+log.retention.check.interval.ms=300000
+log.cleaner.enable=true
+zookeeper.connect=zookeeper:2181
+zookeeper.connection.timeout.ms=6000
 ```
 
 #### Running the app
@@ -107,19 +129,19 @@ lein uberjar && java -jar target/shovel-0.9.1-standalone.jar consumer-test -f co
 
 ```
       29 text files.
-      28 unique files.
+      29 unique files.
       19 files ignored.
 
-http://cloc.sourceforge.net v 1.62  T=2.87 s (3.8 files/s, 398.7 lines/s)
+http://cloc.sourceforge.net v 1.62  T=2.44 s (4.5 files/s, 436.4 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Clojure                          6             70             98            408
+Clojure                          6             53             88            351
 Maven                            1              1              4            347
-HTML                             1             38              0            149
-Bourne Shell                     3              2              0             28
+HTML                             1             38              0            150
+Bourne Shell                     3              2              0             30
 -------------------------------------------------------------------------------
-SUM:                            11            111            102            932
+SUM:                            11             94             92            878
 -------------------------------------------------------------------------------
 ```
 
