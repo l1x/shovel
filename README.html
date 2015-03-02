@@ -110,7 +110,20 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 <p><a href="https://archive.apache.org/dist/kafka/0.8.2.0/RELEASE_NOTES.html">0.8.2.0 Release Notes</a></p>
 
 <h3>
-<a id="user-content-download-kafka-and-set-up-the-dev-environment" class="anchor" href="#download-kafka-and-set-up-the-dev-environment" aria-hidden="true"><span class="octicon octicon-link"></span></a>Download Kafka and set up the dev environment</h3>
+<a id="user-content-setting-up-dev-env-the-docker-way" class="anchor" href="#setting-up-dev-env-the-docker-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting up dev env, the Docker way</h3>
+
+<div class="highlight highlight-Bash"><pre>docker pull istvan/zookeeper:latest
+docker pull istvan/kafka:0.8.2.0
+docker pull istvan/shovel:0.9.1
+
+docker run --name zookeeper -d -p 127.0.0.1:2181:2181 istvan/zookeeper:latest
+docker run --name kafka --link zookeeper:zookeeper  -d -p 127.0.0.1:9092:9092 istvan/kafka:0.8.2.0
+docker run istvan/shovel:0.9.1</pre></div>
+
+<h3>
+<a id="user-content-setting-up-dev-env-the-painful-way" class="anchor" href="#setting-up-dev-env-the-painful-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting up dev env, the painful way</h3>
+
+<p>Download and extract the Kafka package and make sure Java is installed.</p>
 
 <h4>
 <a id="user-content-start-zookeeper" class="anchor" href="#start-zookeeper" aria-hidden="true"><span class="octicon octicon-link"></span></a>Start Zookeeper</h4>

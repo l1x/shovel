@@ -63,7 +63,21 @@ Tested only with Kafka 0.8.2.0
 
 [0.8.2.0 Release Notes](https://archive.apache.org/dist/kafka/0.8.2.0/RELEASE_NOTES.html)
 
-### Download Kafka and set up the dev environment
+### Setting up dev env, the Docker way
+
+```Bash
+docker pull istvan/zookeeper:latest
+docker pull istvan/kafka:0.8.2.0
+docker pull istvan/shovel:0.9.1
+
+docker run --name zookeeper -d -p 127.0.0.1:2181:2181 istvan/zookeeper:latest
+docker run --name kafka --link zookeeper:zookeeper  -d -p 127.0.0.1:9092:9092 istvan/kafka:0.8.2.0
+docker run istvan/shovel:0.9.1
+```
+
+### Setting up dev env, the painful way
+
+Download and extract the Kafka package and make sure Java is installed.
 
 #### Start Zookeeper
 
