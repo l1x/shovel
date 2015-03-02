@@ -26,8 +26,8 @@
     [clojure.lang           PersistentHashMap PersistentArrayMap 
                             PersistentVector                      ]
     [kafka.consumer         ConsumerConfig Consumer 
-                            ConsumerIterator KafkaStream          ]
-    [kafka.javaapi.consumer ConsumerConnector                     ]
+                            ConsumerIterator KafkaStream 
+                            ConsumerConnector                     ]
     [kafka.message          MessageAndMetadata                    ]
     [java.util              HashMap ArrayList Properties          ])
   (:gen-class))

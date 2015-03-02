@@ -5,7 +5,9 @@
             :url "https://www.apache.org/licenses/LICENSE-2.0.txt"}
   :dependencies [
     ;kafka
-    [org.apache.kafka/kafka_2.10  "0.8.2.0"]
+    [org.apache.kafka/kafka_2.10    "0.8.2.0"]
+    [org.apache.kafka/kafka-clients "0.8.2.0"]
+
     ;rest
     [org.clojure/clojure          "1.6.0"]
     [org.clojure/core.async       "0.1.303.0-886421-alpha"]

@@ -31,13 +31,18 @@
     [java.util.concurrent   ThreadPoolExecutor$DiscardPolicy    ]
     [clojure.lang           PersistentHashMap PersistentArrayMap
                             PersistentVector                    ]
+
     [kafka.consumer         ConsumerConfig Consumer
-                            KafkaStream ConsumerIterator ]
+                            KafkaStream ConsumerIterator        ]
+    [kafka.message          MessageAndMetadata                  ]
+
     [kafka.javaapi.consumer ConsumerConnector                   ]
-    [kafka.message          MessageAndMetadata                  ])
+    [org.apache.kafka.clients.producer Producer                            ]
+  )
   (:gen-class))
 
 ;; metrics 
+;; http://www.apache.org/dist/kafka/0.8.2-beta/java-doc/org/apache/kafka/common/metrics/stats/Rate.html
 (def reg (new-registry))
 (defmeter     reg messages-read)
 (defmeter     reg messages-written)
@@ -88,7 +93,7 @@
              (cond (= @counter counter-reset)
                (do
                  (reset! counter 0)
-                 (async/>!! stat-chan {:rates (rates messages-written) :connector producer-connector } ))
+                 (async/>!! stat-chan {:rates (rates messages-written) :connector producer-connector :metrics (.metrics producer-connector) } ))
              :else
                (do
                  (log/debug @counter)

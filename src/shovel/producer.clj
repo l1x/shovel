@@ -26,8 +26,9 @@
   (:import
     [clojure.lang           PersistentHashMap PersistentArrayMap
                             PersistentVector                    ]
-    [kafka.javaapi.producer Producer                            ]
     [kafka.producer         KeyedMessage ProducerConfig         ]
+    ;http://www.trieuvan.com/apache/kafka/0.8.2.0/javadoc/org/apache/kafka/clients/producer/Producer.html ????
+    [kafka.javaapi.producer Producer                            ]
     [java.util              Properties                          ])
   (:gen-class))
 
