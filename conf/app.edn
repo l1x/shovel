@@ -1,8 +1,16 @@
 {
-  :common {
-    :consumer-topic "shovel-test-0"
-    :producer-topic "shovel-test-0"
+  :shovel-consumer {
+    :topic                "shovel-test-0"
+    :counter-reset        100
+    :main-loop-timeout    10000
   } 
+
+  :shovel-producer {
+    :topic                "shovel-test-0"
+    :num-of-messages      1000
+    :counter-reset        100
+    :main-loop-timeout    10000
+  }
 
   :consumer-config {  
     :zookeeper.connect                "127.0.0.1:2181"
