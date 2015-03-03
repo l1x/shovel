@@ -24,11 +24,11 @@
     [clojure.tools.logging  :as log                         ])
     ;none
   (:import
-    [clojure.lang           PersistentHashMap PersistentArrayMap
-                            PersistentVector                    ]
-    [kafka.javaapi.producer Producer                            ]
-    [kafka.producer         KeyedMessage ProducerConfig         ]
-    [java.util              Properties                          ])
+    [clojure.lang                       PersistentHashMap PersistentArrayMap
+                                        PersistentVector                      ]
+    [org.apache.kafka.clients.producer  Producer                              ]
+    [kafka.producer                     KeyedMessage ProducerConfig           ]
+    [java.util                          Properties                            ])
   (:gen-class))
 
 ; internal 
@@ -51,6 +51,8 @@
     (KeyedMessage. topic nil value)))
 
 (defn produce
+  "This has to be rewritten and take the producer configuration 
+  into consideration, potentially return the latency of the call as well"
   [^Producer producer ^KeyedMessage message]
   (log/debug "fn: produce params: " producer message)
   (try 
