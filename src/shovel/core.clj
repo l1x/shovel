@@ -32,12 +32,9 @@
     [clojure.lang           PersistentHashMap PersistentArrayMap
                             PersistentVector                    ]
 
-    [kafka.consumer         ConsumerConfig Consumer
-                            KafkaStream ConsumerIterator        ]
-    [kafka.message          MessageAndMetadata                  ]
-
-    [kafka.javaapi.consumer ConsumerConnector                   ]
-    [org.apache.kafka.clients.producer Producer                            ]
+    [org.apache.kafka.clients.consumer  ConsumerConfig Consumer
+                                        ConsumerRecord ConsumerRecords ]
+    [org.apache.kafka.clients.producer Producer                 ]
   )
   (:gen-class))
 
@@ -102,6 +99,31 @@
     (main-loop stat-chan main-loop-timeout)))
 
 ;; CONSUMER
+;;
+;; The new consumer looks like this:
+;;
+;;//    @Test
+;;//    public void testConsumerGroupManagementWithAutoOffsetCommits() {
+;;//        Properties props = new Properties();
+;;//        props.put("metadata.broker.list", "localhost:9092");
+;;//        props.put("group.id", "test");
+;;//        props.put("session.timeout.ms", "1000");
+;;//        props.put("auto.commit.enable", "true");
+;;//        props.put("auto.commit.interval.ms", "10000");
+;;//        KafkaConsumer consumer = new KafkaConsumer(props);
+;;//        // subscribe to some topics
+;;//        consumer.subscribe("foo", "bar");
+;;//        boolean isRunning = true;
+;;//        while(isRunning) {
+;;//            Map<String, ConsumerRecords> records = consumer.poll(100);
+;;//            process(records);
+;;//        }
+;;//        consumer.close();
+;;//    }
+;;
+;;
+;;
+;;
 
 (defn test-consumer
   [config]
@@ -125,7 +147,8 @@
             (async/thread
               (let [ ^ConsumerIterator iterator (.iterator stream) ]
                 (while (.hasNext iterator)
-                  (let [message (sh-consumer/message-to-vec (.next iterator))]
+                  (let [  message-raw (.next iterator)
+                          message (sh-consumer/message-to-vec message-raw)]
                     (do
                       (swap! message-counter inc)
                       (log/debug "message counter: " @message-counter)
