@@ -1,4 +1,4 @@
-(defproject shovel "0.9.1"
+(defproject shovel "0.2.1"
   :description "Simple Kafka consumer and producer using core.async"
   :url "https://clojars.org/shovel"
   :license {:name " Apache License Version 2.0"

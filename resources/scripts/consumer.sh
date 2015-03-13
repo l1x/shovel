@@ -1,5 +1,4 @@
 java \
-    -agentlib:hprof=heap=sites \
     -Xms256m -Xmx512m -server \
     -XX:NewRatio=2 -XX:+UseConcMarkSweepGC \
     -XX:+TieredCompilation -XX:+AggressiveOpts \
@@ -10,5 +9,7 @@ java \
     -XX:+UnlockCommercialFeatures -XX:+FlightRecorder \
     -XX:FlightRecorderOptions=defaultrecording=true,dumponexit=true,dumponexitpath=consumer.jfr \
     -XX:+HeapDumpOnOutOfMemoryError \
-    -jar target/shovel-0.9.1-standalone.jar consumer-test
+    -jar target/shovel-0.2.1-standalone.jar consumer-test
 
+
+    #-agentlib:hprof=heap=sites \

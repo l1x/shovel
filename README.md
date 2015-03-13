@@ -5,14 +5,14 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.
 
 ## Releases and Dependency Information
 
-Latest and greatest stable release is 0.9.1:
+Latest and greatest stable release is 0.2.1:
 
-* [0.9.1](https://github.com/l1x/shovel/tree/0.9.1)
+* [0.2.1](https://github.com/l1x/shovel/tree/0.2.1)
 
 Leiningen dependency information:
 
 ```clojure
-[shovel "0.9.1"]
+[shovel "0.2.1"]
 ```
 ## Internals
 
@@ -68,11 +68,11 @@ Tested only with Kafka 0.8.2.0
 ```Bash
 docker pull istvan/zookeeper:latest
 docker pull istvan/kafka:0.8.2.0
-docker pull istvan/shovel:0.9.1
+docker pull istvan/shovel:0.2.1
 
 docker run --name zookeeper -d -p 127.0.0.1:2181:2181 istvan/zookeeper:latest
 docker run --name kafka --link zookeeper:zookeeper  -d -p 127.0.0.1:9092:9092 istvan/kafka:0.8.2.0
-docker run istvan/shovel:0.9.1
+docker run istvan/shovel:0.2.1
 ```
 
 ### Setting up dev env, the painful way
@@ -131,13 +131,13 @@ zookeeper.connection.timeout.ms=6000
 Producer:
 
 ```
-lein uberjar && java -jar target/shovel-0.9.1-standalone.jar producer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.2.1-standalone.jar producer-test -f conf/app.edn
 ```
 
 Consumer:
 
 ```
-lein uberjar && java -jar target/shovel-0.9.1-standalone.jar consumer-test -f conf/app.edn
+lein uberjar && java -jar target/shovel-0.2.1-standalone.jar consumer-test -f conf/app.edn
 ```
 ## CLOC
 

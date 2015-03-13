@@ -66,17 +66,19 @@
   [config]
   (log/info "fn: test-producer params: " config)
   (let [                      stat-chan           (async/chan 8)
+          ^Long               num-of-threads      (get-in config [:ok :shovel-producer :num-of-threads    ]   )
           ^Long               main-loop-timeout   (get-in config [:ok :shovel-producer :main-loop-timeout ]   )
           ^Long               counter-reset       (get-in config [:ok :shovel-producer :counter-reset     ]   )
           ^Long               num-of-messages     (get-in config [:ok :shovel-producer :num-of-messages   ]   )
           ^String             producer-topic      (get-in config [:ok :shovel-producer :topic             ]   ) 
-          ^PersistentArrayMap producer-config     (get-in config [:ok :producer-config                    ]   )   ]
-    (dotimes [i 8]
+          ^PersistentArrayMap producer-config     (get-in config [:ok :producer-config                    ]   ) 
+          ^Producer           producer-connector  (sh-producer/producer-connector producer-config             )  ]
+
+    (dotimes [i num-of-threads]
       ;create i threads
       (async/thread
-        (let [ ^Producer  producer-connector  (sh-producer/producer-connector producer-config)
-                          counter             (atom 0)
-                          message-counter     (atom 0) ]
+        (let [ counter         (atom 0)
+               message-counter (atom 0) ]
          (log/info "Producer starting up: " producer-connector)
          (doseq [n (range num-of-messages)]
            (let [  message (sh-producer/message producer-topic (str "{this is my message : " n "}"))
