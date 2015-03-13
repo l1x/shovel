@@ -1,15 +1,16 @@
 {
   :shovel-consumer {
     :topic                "shovel-test-0"
-    :counter-reset        100
+    :counter-reset        100000
     :main-loop-timeout    10000
   } 
 
   :shovel-producer {
     :topic                "shovel-test-0"
-    :num-of-messages      1000
-    :counter-reset        100
+    :num-of-messages      10000
+    :counter-reset        1000
     :main-loop-timeout    10000
+    :num-of-threads       16
   }
 
   :consumer-config {  
@@ -17,7 +18,7 @@
     :zookeeper.session.timeout.ms     "6000"
     :zookeeper.connection.timeout.ms  "6000"
     :zookeeper.sync.time.ms           "2000"
-    :group.id                         "shovel-test-0"
+    :group.id                         "shovel-test-2"
     :auto.offset.reset                "smallest"
     :auto.commit.enable               "true" 
     :request.required.acks            "1" 

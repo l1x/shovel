@@ -52,15 +52,15 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 <h2>
 <a id="user-content-releases-and-dependency-information" class="anchor" href="#releases-and-dependency-information" aria-hidden="true"><span class="octicon octicon-link"></span></a>Releases and Dependency Information</h2>
 
-<p>Latest and greatest stable release is 0.9.1:</p>
+<p>Latest and greatest stable release is 0.2.1:</p>
 
 <ul>
-<li><a href="https://github.com/l1x/shovel/tree/0.9.1">0.9.1</a></li>
+<li><a href="https://github.com/l1x/shovel/tree/0.2.1">0.2.1</a></li>
 </ul>
 
 <p>Leiningen dependency information:</p>
 
-<div class="highlight highlight-clojure"><pre>[shovel <span class="pl-s1"><span class="pl-pds">"</span>0.9.1<span class="pl-pds">"</span></span>]</pre></div>
+<div class="highlight highlight-clojure"><pre>[shovel <span class="pl-s1"><span class="pl-pds">"</span>0.2.1<span class="pl-pds">"</span></span>]</pre></div>
 
 <h2>
 <a id="user-content-internals" class="anchor" href="#internals" aria-hidden="true"><span class="octicon octicon-link"></span></a>Internals</h2>
@@ -75,11 +75,11 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 
 <div class="highlight highlight-Clojure"><pre>(<span class="pl-k">defn</span> <span class="pl-e">produce</span>
   [^Producer producer ^KeyedMessage message]
-  (log/debug <span class="pl-s1"><span class="pl-pds">"</span>fn: produce params: <span class="pl-pds">"</span></span> producer message)
+  (<span class="pl-en">log/debug</span> <span class="pl-s1"><span class="pl-pds">"</span>fn: produce params: <span class="pl-pds">"</span></span> producer message)
   (<span class="pl-s">try</span>
-    {<span class="pl-c1">:ok</span> (.send producer message)}
+    {<span class="pl-c1">:ok</span> (<span class="pl-en">.send</span> producer message)}
   (<span class="pl-s">catch</span> Exception e
-    { <span class="pl-c1">:error</span> <span class="pl-s1"><span class="pl-pds">"</span>Exception<span class="pl-pds">"</span></span> <span class="pl-c1">:fn</span> <span class="pl-s1"><span class="pl-pds">"</span>produce<span class="pl-pds">"</span></span> <span class="pl-c1">:exception</span> (.getMessage e) <span class="pl-c1">:e</span> e})))</pre></div>
+    { <span class="pl-c1">:error</span> <span class="pl-s1"><span class="pl-pds">"</span>Exception<span class="pl-pds">"</span></span> <span class="pl-c1">:fn</span> <span class="pl-s1"><span class="pl-pds">"</span>produce<span class="pl-pds">"</span></span> <span class="pl-c1">:exception</span> (<span class="pl-en">.getMessage</span> e) <span class="pl-c1">:e</span> e})))</pre></div>
 
 <h4>
 <a id="user-content-consuming" class="anchor" href="#consuming" aria-hidden="true"><span class="octicon octicon-link"></span></a>Consuming</h4>
@@ -88,18 +88,18 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 
 <div class="highlight highlight-Clojure"><pre>(<span class="pl-k">defn</span> <span class="pl-e">lazy-messages</span>
   [^ConsumerIterator iterator]
-  (repeatedly #(.next iterator)))</pre></div>
+  (<span class="pl-en">repeatedly</span> #(<span class="pl-en">.next</span> iterator)))</pre></div>
 
 <p><a href="https://clojuredocs.org/clojure.core/repeatedly">https://clojuredocs.org/clojure.core/repeatedly</a></p>
 
 <p>Unfortunately the code hold onto the head and the heap exploded. I went for the recommended way of using the Kafka library.</p>
 
 <div class="highlight highlight-Clojure"><pre>          ...
-          (doseq [ ^KafkaStream stream message-streams ]
-            (async/thread
-              (<span class="pl-s">let</span> [ ^ConsumerIterator iterator (.iterator stream) ]
-                (while (.hasNext iterator)
-                  (<span class="pl-s">let</span> [message (sh-consumer/message-to-vec (.next iterator))]
+          (<span class="pl-en">doseq</span> [ ^KafkaStream stream message-streams ]
+            (<span class="pl-en">async/thread</span>
+              (<span class="pl-s">let</span> [ ^ConsumerIterator iterator (<span class="pl-en">.iterator</span> stream) ]
+                (<span class="pl-en">while</span> (<span class="pl-en">.hasNext</span> iterator)
+                  (<span class="pl-s">let</span> [message (<span class="pl-en">sh-consumer/message-to-vec</span> (<span class="pl-en">.next</span> iterator))]
                     ...</pre></div>
 
 <h2>
@@ -114,11 +114,11 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 
 <div class="highlight highlight-Bash"><pre>docker pull istvan/zookeeper:latest
 docker pull istvan/kafka:0.8.2.0
-docker pull istvan/shovel:0.9.1
+docker pull istvan/shovel:0.2.1
 
 docker run --name zookeeper -d -p 127.0.0.1:2181:2181 istvan/zookeeper:latest
 docker run --name kafka --link zookeeper:zookeeper  -d -p 127.0.0.1:9092:9092 istvan/kafka:0.8.2.0
-docker run istvan/shovel:0.9.1</pre></div>
+docker run istvan/shovel:0.2.1</pre></div>
 
 <h3>
 <a id="user-content-setting-up-dev-env-the-painful-way" class="anchor" href="#setting-up-dev-env-the-painful-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting up dev env, the painful way</h3>
@@ -174,12 +174,12 @@ zookeeper.connection.timeout.ms=6000
 
 <p>Producer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.9.1-standalone.jar producer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.2.1-standalone.jar producer-test -f conf/app.edn
 </code></pre>
 
 <p>Consumer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.9.1-standalone.jar consumer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.2.1-standalone.jar consumer-test -f conf/app.edn
 </code></pre>
 
 <h2>
