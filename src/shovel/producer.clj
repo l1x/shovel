@@ -27,7 +27,6 @@
     [clojure.lang                       PersistentHashMap PersistentArrayMap
                                         PersistentVector                      ]
     [org.apache.kafka.clients.producer  Producer                              ]
-    [kafka.producer                     KeyedMessage ProducerConfig           ]
     [java.util                          Properties                            ])
   (:gen-class))
 
@@ -35,27 +34,3 @@
 
 ; external 
 
-(defn producer-connector
-  ^Producer [^PersistentArrayMap h]
-  (log/debug "fn: producer-connector" " params: " h)
-  (let [ ^Properties      properties  (hashmap-to-properties h)
-         ^ProducerConfig  config      (ProducerConfig. properties) ]
-    (Producer. config)))
-
-(defn message
-  (^KeyedMessage [topic key value] 
-    (log/debug "fn: message params: " topic key value)
-    (KeyedMessage. topic key value))
-  (^KeyedMessage [topic value]
-    (log/debug "fn: message params: " topic value)
-    (KeyedMessage. topic nil value)))
-
-(defn produce
-  "This has to be rewritten and take the producer configuration 
-  into consideration, potentially return the latency of the call as well"
-  [^Producer producer ^KeyedMessage message]
-  (log/debug "fn: produce params: " producer message)
-  (try 
-    {:ok (.send producer message)}
-  (catch Exception e 
-    { :error "Exception" :fn "produce" :exception (.getMessage e) :e e})))

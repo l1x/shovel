@@ -19,46 +19,36 @@
     ;internal
     [shovel.helpers :refer :all       ]
     ;external
-    [clojure.core.async     :as async ]
     [clojure.tools.logging  :as log   ]
     )
   (:import
-    [clojure.lang           PersistentHashMap PersistentArrayMap 
-                            PersistentVector                      ]
-    [kafka.consumer         ConsumerConfig Consumer 
-                            ConsumerIterator KafkaStream 
-                            ConsumerConnector                     ]
-    [kafka.message          MessageAndMetadata                    ]
-    [java.util              HashMap ArrayList Properties          ])
+    [clojure.lang                       PersistentHashMap PersistentArrayMap 
+                                        PersistentVector                      ]
+    [org.apache.kafka.clients.consumer  KafkaConsumer Consumer                ]
+    [java.util                          HashMap ArrayList Properties          ])
   (:gen-class))
 
-; internal 
-; external 
+(defn kafka-consumer 
+  "returns a KafkaConsumer"
+  ^KafkaConsumer [^PersistentArrayMap h]
+  (let [ ^Properties properties (hashmap-to-properties h) ]
+    (log/info properties)
+    (KafkaConsumer. properties)))
 
-(defn message-to-string
-  "returns a string for a message"
-  ^String [^MessageAndMetadata message]
-  (log/debug "fn: message-to-string params: " message)
-  (String. (.message message)))
+(defn subscribe 
+  "subscribes a customer to a topic" 
+  [^KafkaConsumer consumer ^String topic] 
+  (.subscribe consumer topic))
 
-(defn message-to-vec
-  "returns a vector of all of the message fields"
-  ^PersistentVector [^MessageAndMetadata message]
-  (log/debug "fn: message-to-vec params: " message)
-  [(.topic message) (.offset message) (.partition message) (.key message) (.message message)])
+(defn consumer-blocking-poll
+  "blocking poll for a kafka-consumer"
+  [kafka-consumer]
+  (try
+   {:ok (.poll kafka-consumer 0) }
+  (catch Exception e
+   (do
+    (let [return {:error "Exception" :fn "consumer-poll" :exception (.getMessage e) }]
+    (log/debug "Exception: " (.printStackTrace e))
+    return)))))
 
-(defn consumer-connector
-  "returns a ConsumerConnector that can be used to create consumer streams"
-  ^ConsumerConnector [^PersistentArrayMap h]
-  (log/debug "fn: consumer-connector params: " h)
-  (let [  ^Properties     properties  (hashmap-to-properties h)
-          ^ConsumerConfig config      (ConsumerConfig. properties)  ]
-    (Consumer/createJavaConsumerConnector config)))
 
-(defn message-streams
-  "returning the message-streams with a certain topic and thread-pool-size
-  message-streams can be processed in threads with simple blocking on empty queue"
-  ^ArrayList [^ConsumerConnector consumer-conn ^String topic ^Integer number-of-streams]
-  (let [  ^HashMap    message-streamz         (.createMessageStreams consumer-conn {topic number-of-streams})
-          ^ArrayList  topic-message-streamz   (.get message-streamz topic) ]
-    topic-message-streamz))
