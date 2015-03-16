@@ -1,59 +1,66 @@
 {
   :shovel-consumer {
     :topic                "shovel-test-0"
-    :counter-reset        100000
-    :main-loop-timeout    1000000
+    :counter-reset        100
+    :main-loop-timeout    10000
   } 
 
   :shovel-producer {
     :topic                "shovel-test-0"
-    :num-of-messages      100000
+    :num-of-messages      1000000
     :counter-reset        10000
-    :main-loop-timeout    20000
+    :main-loop-timeout    10000
     :num-of-threads       16
   }
 
   :consumer-config {  
-    :zookeeper.connect                "127.0.0.1:2181"
-    :zookeeper.session.timeout.ms     "6000"
-    :zookeeper.connection.timeout.ms  "6000"
-    :zookeeper.sync.time.ms           "2000"
-    :group.id                         "shovel-test-3"
+    :group.id                         "shovel-test-0"
+    :session.timeout.ms               "6000"
+    :heartbeat.frequency              "1"
+    :bootstrap.servers                "localhost:9092"
+    :enable.auto.commit               "true"
+    :partition.assignment.strategy    "roundrobin"
+    :auto.commit.interval.ms          "50"
     :auto.offset.reset                "smallest"
-    :auto.commit.enable               "true" 
-    :request.required.acks            "1" 
-    :controlled.shutdown.max.retries  "3"
-    :socket.timeout.ms                "30000"   ; 30 * 1000
-    :socket.receive.buffer.bytes      "65536"   ; 64 * 1024
-    :fetch.message.max.bytes          "1048576" ;1024 * 1024
-    :auto.commit.interval.ms          "2000"    ;2 * 1000
-    :queued.max.message.chunks        "10"
-    :rebalance.max.retries            "4"
-    :fetch.min.bytes                  "1"
-    :fetch.wait.max.ms                "100"
-    :rebalance.backoff.ms             "2000"
-    :refresh.leader.backoff.ms        "200"
-    :consumer.timeout.ms              "-1"
+    :fetch.min.bytes                  "4"
+    :fetch.max.wait.ms                "100"
+    :metadata.fetch.timeout.ms        "150"
+    :total.memory.bytes               "100000000"   ; 100MB
+    :fetch.buffer.bytes               "10000000"    ; 10MB
+    :client.id                        "shovel-test"
+    :socket.receive.buffer.bytes      "64000"       ; 64KB
+    :reconnect.backoff.ms             "1000"
+    ;:metrics.sample.window.ms         "60000"
+    ;:metrics.num.samples              "15"
+    ;:metric.reporters                 ""
+    :key.deserializer                 "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+    :value.deserializer               "org.apache.kafka.common.serialization.ByteArrayDeserializer"
   }
 
   :producer-config {  
-    :metadata.broker.list               "127.0.0.1:9092"
-    :request.required.acks              "1"
-    :serializer.class                   "kafka.serializer.StringEncoder"
-    :request.timeout.ms                 "10000"
-    :producer.type                      "sync"
-    :partitioner.class                  "kafka.producer.DefaultPartitioner"
-    :compression.codec                  "snappy"
-    :compressed.topics                  "null" ; all
-    :message.send.max.retries           "3"
-    :retry.backoff.ms                   "100"
-    :topic.metadata.refresh.interval.ms "600000" ; 600 * 1000
-    :queue.buffering.max.ms             "5000"
-    :queue.buffering.max.messages       "10000"
-    :queue.enqueue.timeout.ms           "-1"
-    :batch.num.messages                 "200"  ; only in async mode
-    :send.buffer.bytes                  "102400" ; 100 * 1024
-    :client.id                          "shovel-test-client"
+    :bootstrap.servers                      "127.0.0.1:9092"
+    :metadata.fetch.timeout.ms              "1000"
+    :metadata.max.age.ms                    "100000"
+    :batch.size                             "256"
+    :buffer.memory                          "1024000" ; 1000 * 1024
+    :acks                                   "1"
+    :timeout.ms                             "250"
+    :linger.ms                              "0"
+    :client.id                              "shovel-test-client"
+    :send.buffer.bytes                      "102400" ; 100 * 1024
+    :receive.buffer.bytes                   "102400" ; 100 * 1024
+    :max.request.size                       "5000000"
+    :reconnect.backoff.ms                   "100"
+    :block.on.buffer.full                   "true"
+    :retries                                "3"
+    :retry.backoff.ms                       "100"
+    :compression.type                       "snappy"
+    :metrics.sample.window.ms               "60000"
+    :metrics.num.samples                    "15"
+    :metric.reporters                       ""
+    ;:max.in.flight.requests.per.connection  "1024"
+    :key.serializer                         "org.apache.kafka.common.serialization.ByteArraySerializer"
+    :value.serializer                       "org.apache.kafka.common.serialization.ByteArraySerializer"
   }
 
 };end

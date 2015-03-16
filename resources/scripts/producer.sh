@@ -8,4 +8,4 @@ java -Xms256m -Xmx512m -server \
     -XX:+UnlockCommercialFeatures -XX:+FlightRecorder \
     -XX:FlightRecorderOptions=defaultrecording=true,dumponexit=true,dumponexitpath=producer.jfr \
     -XX:+HeapDumpOnOutOfMemoryError \
-    -jar target/shovel-0.2.2-standalone.jar producer-test
+    -jar target/shovel-0.3.1-standalone.jar producer-test

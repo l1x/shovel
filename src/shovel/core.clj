@@ -26,15 +26,11 @@
     [clojure.core.async     :as     async         ]
     [clojure.tools.cli      :refer  [parse-opts]  ])
   (:import 
-    [java.io                File                                ]
-    [java.util              ArrayList                           ]
-    [java.util.concurrent   ThreadPoolExecutor$DiscardPolicy    ]
+    [java.io                File                                      ]
+    [java.util              ArrayList                                 ]
     [clojure.lang           PersistentHashMap PersistentArrayMap
-                            PersistentVector                    ]
-    [kafka.consumer         ConsumerConfig Consumer
-                            KafkaStream ConsumerIterator ]
-    [kafka.javaapi.consumer ConsumerConnector                   ]
-    [kafka.message          MessageAndMetadata                  ])
+                            PersistentVector                          ]
+    [org.apache.kafka.clients.producer  KafkaProducer ProducerRecord  ])
   (:gen-class))
 
 ;; metrics 
@@ -56,9 +52,9 @@
             (log/info "main-loop: " result)
                 ;else - timeout
               (do
-                (log/info "Channel timed out after " timeout " ms. Stopping...")
+                (log/info "Channel timed out after " timeout " ms. Recur..")
                 ;(.shutdown connector)
-                (exit 0))))))))
+                (main-loop stat-chan timeout))))))))
 
 ;; PRODUCER
 
@@ -72,72 +68,38 @@
           ^Long               num-of-messages     (get-in config [:ok :shovel-producer :num-of-messages   ]   )
           ^String             producer-topic      (get-in config [:ok :shovel-producer :topic             ]   ) 
           ^PersistentArrayMap producer-config     (get-in config [:ok :producer-config                    ]   ) 
-          ^Producer           producer-connector  (sh-producer/producer-connector producer-config             )  ]
-
+          ^KafkaProducer      kafka-producer      (sh-producer/kafka-producer producer-config                 )      
+                              _                   (.addShutdownHook (Runtime/getRuntime) 
+                                                                    (Thread. (fn [] ((do 
+                                                                                       (log/info "shutting down....") 
+                                                                                       (sh-producer/producer-close kafka-producer) 
+                                                                                       (exit 0)))))) ]
     (dotimes [i num-of-threads]
       ;create i threads
       (async/thread
         (let [ counter         (atom 0)
                message-counter (atom 0) ]
-         (log/info "Producer starting up: " producer-connector)
+         (log/info "Thread starting up with: " kafka-producer)
          (doseq [n (range num-of-messages)]
-           (let [  message (sh-producer/message producer-topic (str "{this is my message : " n "}"))
-                   return  (sh-producer/produce producer-connector message)    ]
-           (do
-             (swap! message-counter inc)
-             (log/debug "message counter: " @message-counter)
-             (mark! messages-written)
-             (cond (= @counter counter-reset)
-               (do
-                 (reset! counter 0)
-                 (async/>!! stat-chan {:rates (rates messages-written) :connector producer-connector } ))
-             :else
-               (do
-                 (log/debug @counter)
-                 (swap! counter inc)))))))))
-    ;this is the event loop
-    (main-loop stat-chan main-loop-timeout)))
-
-;; CONSUMER
-
-(defn test-consumer
-  [config]
-  (log/info "fn: test-consumer params: " config)
-  (let [        stat-chan           (async/chan 8)
-        ^Long   main-loop-timeout   (get-in config [:ok :shovel-consumer :main-loop-timeout ]     )
-        ^Long   counter-reset       (get-in config [:ok :shovel-consumer :counter-reset     ]     ) ]
-    (dotimes [i 4]
-      ;create i threads
-      (async/thread
-        ;each thread has its own kafka connector, that has to shut down properly before exit,
-        ;also this needs to move up one layer (let) to save some insignificant amount of memory
-        (let [  ^PersistentArrayMap consumer-config     (get-in config [:ok :consumer-config])
-                ^String             consumer-topic      (get-in config [:ok :shovel-consumer :topic])
-                                    consumer-connector  (sh-consumer/consumer-connector consumer-config)
-                ^ArrayList          message-streams     (sh-consumer/message-streams consumer-connector consumer-topic (int 1))
-                                    counter             (atom 0)
-                                    message-counter     (atom 0)                                                                  ]
-          (log/info "fn: test-consumer #streams:" (count message-streams))
-          (doseq [ ^KafkaStream stream message-streams ]
-            (async/thread
-              (let [ ^ConsumerIterator iterator (.iterator stream) ]
-                (while (.hasNext iterator)
-                  (let [message (sh-consumer/message-to-vec (.next iterator))]
-                    (do
-                      (swap! message-counter inc)
-                      (log/debug "message counter: " @message-counter)
-                      (mark! messages-read)
-                      (cond (= @counter counter-reset)
-                        (do
-                          (reset! counter 0)
-                          (log/info "Sample message: " message)
-                          (async/>!! stat-chan {:rates (rates messages-read) :connector consumer-connector } ))
-                      :else
-                        (do
-                          (swap! counter inc)))
-                      (log/debug message @counter stat-chan))))))))))
+           (let [  ^ProducerRecord record (sh-producer/producer-record
+                                            (.getBytes producer-topic)
+                                            (.getBytes (str "{this is my message : " n "}")))
+                   return (sh-producer/producer-send-async kafka-producer record)                              ]
+          (do
+            (swap! message-counter inc)
+            ;(log/debug "message counter: " @message-counter)
+            (mark! messages-written)
+            (cond (= @counter counter-reset)
+              (do
+                (reset! counter 0)
+                (async/>!! stat-chan {:rates (rates messages-written) :connector kafka-producer :sample-ret return} ))
+            :else
+              (do
+                ;(log/debug @counter)
+                (swap! counter inc)))))))))
   ;this is the event loop
   (main-loop stat-chan main-loop-timeout)))
+
 
 ;; CLI
 
@@ -165,8 +127,6 @@
     (case (first arguments)
       "print-config"
         (log/info config)
-      "consumer-test"
-        (test-consumer config)
       "producer-test"
         (test-producer config)
       ;default
