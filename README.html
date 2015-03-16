@@ -52,15 +52,19 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 <h2>
 <a id="user-content-releases-and-dependency-information" class="anchor" href="#releases-and-dependency-information" aria-hidden="true"><span class="octicon octicon-link"></span></a>Releases and Dependency Information</h2>
 
-<p>Latest and greatest stable release is 0.2.1:</p>
+<p>There are two versions:</p>
 
 <ul>
-<li><a href="https://github.com/l1x/shovel/tree/0.2.1">0.2.1</a></li>
+<li>
+<a href="https://github.com/l1x/shovel/tree/0.2.2">0.2.x</a> for the old API</li>
+<li>
+<a href="https://github.com/l1x/shovel/tree/0.3.1">0.3.x</a> for the new API (kafka-clients)</li>
 </ul>
 
 <p>Leiningen dependency information:</p>
 
-<div class="highlight highlight-clojure"><pre>[shovel <span class="pl-s1"><span class="pl-pds">"</span>0.2.1<span class="pl-pds">"</span></span>]</pre></div>
+<div class="highlight highlight-clojure"><pre>[shovel <span class="pl-s1"><span class="pl-pds">"</span>0.2.2<span class="pl-pds">"</span></span>]
+[shovel <span class="pl-s1"><span class="pl-pds">"</span>0.3.1<span class="pl-pds">"</span></span>]</pre></div>
 
 <h2>
 <a id="user-content-internals" class="anchor" href="#internals" aria-hidden="true"><span class="octicon octicon-link"></span></a>Internals</h2>
@@ -105,20 +109,20 @@ and a simple producer. Works with the Kafka 0.8.1 or newer.</p>
 <h2>
 <a id="user-content-usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
 
-<p>Tested only with Kafka 0.8.2.0</p>
+<p>Tested only with Kafka 0.8.2.1</p>
 
-<p><a href="https://archive.apache.org/dist/kafka/0.8.2.0/RELEASE_NOTES.html">0.8.2.0 Release Notes</a></p>
+<p><a href="https://archive.apache.org/dist/kafka/0.8.2.1/RELEASE_NOTES.html">0.8.2.1 Release Notes</a></p>
 
 <h3>
 <a id="user-content-setting-up-dev-env-the-docker-way" class="anchor" href="#setting-up-dev-env-the-docker-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting up dev env, the Docker way</h3>
 
 <div class="highlight highlight-Bash"><pre>docker pull istvan/zookeeper:latest
-docker pull istvan/kafka:0.8.2.0
-docker pull istvan/shovel:0.2.1
+docker pull istvan/kafka:0.8.2.1
+docker pull istvan/shovel:0.2.2
 
 docker run --name zookeeper -d -p 127.0.0.1:2181:2181 istvan/zookeeper:latest
-docker run --name kafka --link zookeeper:zookeeper  -d -p 127.0.0.1:9092:9092 istvan/kafka:0.8.2.0
-docker run istvan/shovel:0.2.1</pre></div>
+docker run --name kafka --link zookeeper:zookeeper  -d -p 127.0.0.1:9092:9092 istvan/kafka:0.8.2.1
+docker run istvan/shovel:0.2.2</pre></div>
 
 <h3>
 <a id="user-content-setting-up-dev-env-the-painful-way" class="anchor" href="#setting-up-dev-env-the-painful-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting up dev env, the painful way</h3>
@@ -174,12 +178,12 @@ zookeeper.connection.timeout.ms=6000
 
 <p>Producer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.2.1-standalone.jar producer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.2.2-standalone.jar producer-test -f conf/app.edn
 </code></pre>
 
 <p>Consumer:</p>
 
-<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.2.1-standalone.jar consumer-test -f conf/app.edn
+<pre><code>lein uberjar &amp;&amp; java -jar target/shovel-0.2.2-standalone.jar consumer-test -f conf/app.edn
 </code></pre>
 
 <h2>
