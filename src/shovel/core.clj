@@ -51,7 +51,7 @@
   (while true
     (async/<!!
       (async/go
-        (let [[result source] (async/alts! [stat-chan (async/timeout 10000)])]
+        (let [[result source] (async/alts! [stat-chan (async/timeout timeout)])]
           (if (= source stat-chan)
             (log/info "main-loop: " result)
                 ;else - timeout
@@ -130,6 +130,7 @@
                       (cond (= @counter counter-reset)
                         (do
                           (reset! counter 0)
+                          (log/info "Sample message: " message)
                           (async/>!! stat-chan {:rates (rates messages-read) :connector consumer-connector } ))
                       :else
                         (do
