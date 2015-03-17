@@ -1,0 +1,6 @@
+FROM centos:7
+MAINTAINER Istvan Szukacs <leccine@gmail.com>
+RUN curl -vjkL -H "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u31-b13/jdk-8u31-linux-x64.rpm > jdk-8u31-linux-x64.rpm
+RUN rpm -i jdk-8u31-linux-x64.rpm
+RUN yum -y update; yum clean all; yum install tar -y
+RUN rm -f jdk-8u31-linux-x64.rpm

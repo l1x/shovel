@@ -1,11 +1,10 @@
-FROM centos:7
+FROM istvan/jdk64:8u31
 MAINTAINER Istvan Szukacs <leccine@gmail.com>
-RUN curl -vjkL -H "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u31-b13/jdk-8u31-linux-x64.rpm > jdk-8u31-linux-x64.rpm
-RUN rpm -i jdk-8u31-linux-x64.rpm
-RUN curl -vjkL http://mirror.cogentco.com/pub/apache/kafka/0.8.2.0/kafka_2.10-0.8.2.0.tgz > kafka_2.10-0.8.2.0.tgz
-RUN yum -y update; yum clean all; yum install tar -y;
-RUN tar xzvf kafka_2.10-0.8.2.0.tgz 
+RUN curl -vjkL http://www.eng.lsu.edu/mirrors/apache/kafka/0.8.2.1/kafka_2.10-0.8.2.1.tgz > kafka_2.10-0.8.2.1.tgz
+RUN tar xzvf kafka_2.10-0.8.2.1.tgz 
+RUN rm -f kafka_2.10-0.8.2.1.tgz
+RUN mv -f kafka_2.10-0.8.2.1 kafka
 EXPOSE 9092
-ADD server.properties kafka_2.10-0.8.2.0/config/server.properties
-RUN cat kafka_2.10-0.8.2.0/config/server.properties
-CMD ["bash", "kafka_2.10-0.8.2.0/bin/kafka-server-start.sh", "kafka_2.10-0.8.2.0/config/server.properties"]
+ADD server.properties kafka/config/server.properties
+RUN cat kafka/config/server.properties
+CMD ["bash", "kafka/bin/kafka-server-start.sh", "kafka/config/server.properties"]
