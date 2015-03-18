@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!-- For assistance related to logback-translator or configuration  -->
 <!-- files in general, please contact the logback user mailing list -->
 <!-- at http://www.qos.ch/mailman/listinfo/logback-user             -->
@@ -26,7 +25,13 @@
       <level>WARN</level>
     </filter>
   </appender>
-  <root level="INFO">
+
+  <!--  <appender name="async" class="ch.qos.logback.classic.AsyncAppender.">
+    <appender-ref ref="stdout"/>
+  </appender>
+  -->
+
+  <root level="DEBUG">
     <appender-ref ref="stdout"/>
     <appender-ref ref="stderr"/>
   </root>
